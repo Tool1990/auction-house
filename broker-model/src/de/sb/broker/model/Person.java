@@ -22,7 +22,7 @@ public class Person extends BaseEntity {
 	@NotNull
 	private byte[] passwordHash;
 
-	@Enumerated
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	@NotNull
 	private Group group;

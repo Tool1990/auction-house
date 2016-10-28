@@ -9,7 +9,7 @@ import javax.persistence.*;
 public abstract class BaseEntity implements Comparable<BaseEntity>{
 
 	@Id
-	@GeneratedValue
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long identity;
 
 	@Version

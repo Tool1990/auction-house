@@ -19,12 +19,12 @@ public class Bid extends BaseEntity{
 	private long price;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "auctionIdentity")
+	@JoinColumn(name = "auctionReference")
 	@NotNull
 	private Auction auction;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "personIdentity")
+	@JoinColumn(name = "personReference")
 	@NotNull
 	private Person bidder;
 	
