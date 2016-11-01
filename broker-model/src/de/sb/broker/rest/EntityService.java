@@ -27,13 +27,6 @@ import de.sb.java.TypeMetadata;
 @TypeMetadata(copyright = "2013-2015 Sascha Baumeister, all rights reserved", version = "1.0.0", authors = "Sascha Baumeister")
 public class EntityService {
 
-	public static void main(String[] args) {
-		final EntityManager entityManager = Persistence.createEntityManagerFactory("broker").createEntityManager();
-		entityManager.getTransaction().begin();
-		Query query = entityManager.createQuery("select p from Person p");
-		System.out.println(query.getResultList());
-		entityManager.getTransaction().commit();
-	}
 	/**
 	 * Deletes the entity matching the given identity, or does nothing if no such entity exists.
 	 * @param authentication the HTTP Basic "Authorization" header value
