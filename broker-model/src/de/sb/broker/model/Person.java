@@ -11,7 +11,7 @@ import java.util.Set;
 @Entity
 @Table(name="Person", schema = "broker")
 @DiscriminatorValue(value = "Person")
-@PrimaryKeyJoinColumn(name = "identity")
+@PrimaryKeyJoinColumn(name = "personIdentity")
 public class Person extends BaseEntity {
 
 	@Column(unique = true, nullable = false)
@@ -23,7 +23,7 @@ public class Person extends BaseEntity {
 	private byte[] passwordHash;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
+	@Column(name = "GroupAlias", nullable = false)
 	@NotNull
 	private Group group;
 

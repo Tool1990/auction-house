@@ -12,7 +12,7 @@ import java.util.Set;
 @Entity
 @Table(name="Auction", schema = "broker")
 @DiscriminatorValue(value = "Auction")
-@PrimaryKeyJoinColumn(name = "identity")
+@PrimaryKeyJoinColumn(name = "auctionIdentity")
 @Inequal(leftAccessPath="closureTimestamp", rightAccessPath="creationTimestamp", operator=Inequal.Operator.GREATER)
 public class Auction extends BaseEntity {
 

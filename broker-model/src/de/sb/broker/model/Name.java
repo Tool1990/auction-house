@@ -8,11 +8,11 @@ import javax.validation.constraints.NotNull;
 @Embeddable
 public class Name {
 
-	@Column(nullable = false)
+	@Column(name ="familyName", nullable = false)
 	@NotNull
 	private String family;
 
-	@Column(nullable = false)
+	@Column(name = "givenName", nullable = false)
 	@NotNull
 	private String given;
 
