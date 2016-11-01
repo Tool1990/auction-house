@@ -1,19 +1,18 @@
 package de.sb.broker.model;
 
+import de.sb.java.validation.Inequal;
+
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-
-import de.sb.java.validation.Inequal;
-
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name="Auction", schema = "broker")
+@Table(name = "Auction", schema = "broker")
 @DiscriminatorValue(value = "Auction")
 @PrimaryKeyJoinColumn(name = "auctionIdentity")
-@Inequal(leftAccessPath="closureTimestamp", rightAccessPath="creationTimestamp", operator=Inequal.Operator.GREATER)
+@Inequal(leftAccessPath = "closureTimestamp", rightAccessPath = "creationTimestamp", operator = Inequal.Operator.GREATER)
 public class Auction extends BaseEntity {
 
 	@Column(nullable = false)
@@ -36,7 +35,7 @@ public class Auction extends BaseEntity {
 	private String description;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "personReference")
+	@JoinColumn(name = "sellerReference")
 	@NotNull
 	private Person seller;
 
@@ -44,7 +43,7 @@ public class Auction extends BaseEntity {
 	private Set<Bid> bids;
 
 	public Auction(Person seller) {
-		super();	
+		super();
 
 		this.title = "";
 		this.unitCount = 1;
@@ -52,7 +51,7 @@ public class Auction extends BaseEntity {
 		this.closureTimestamp = System.currentTimeMillis();
 		this.description = "";
 		this.seller = seller;
-		bids = new HashSet<>(); 
+		bids = new HashSet<>();
 	}
 
 	protected Auction() {
@@ -60,7 +59,7 @@ public class Auction extends BaseEntity {
 	}
 
 	public long getSellerReference() {
-		return seller==null ? 0 : seller.getIdentity();	
+		return seller == null ? 0 : seller.getIdentity();
 	}
 
 	public boolean isClosed() {
