@@ -32,7 +32,7 @@ public class PersonEntityTest extends EntityTest {
 		assertEquals(1, constraintViolations.size());
 		populateTestPerson();
 
-		testPerson.setAlias("tooLongString1234");
+		testPerson.setAlias(this.generateString(17));
 		constraintViolations = validator.validate(testPerson);
 		assertEquals(1, constraintViolations.size());
 		populateTestPerson();

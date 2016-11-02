@@ -102,4 +102,14 @@ public abstract class EntityTest {
 			entityManager.close();
 		}
 	}
+
+	public static String generateString(int lenght){
+		StringBuilder stringBuilder = new StringBuilder();
+
+		for (int i = 0; i < lenght; i++){
+			stringBuilder.append("*");
+		}
+
+		return stringBuilder.toString();
+	}
 }
