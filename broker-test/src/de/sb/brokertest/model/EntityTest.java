@@ -1,20 +1,21 @@
 package de.sb.brokertest.model;
 
-import static java.util.logging.Level.WARNING;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.logging.Logger;
+import de.sb.broker.model.BaseEntity;
+import de.sb.java.TypeMetadata;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Logger;
 
-import de.sb.broker.model.BaseEntity;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import de.sb.java.TypeMetadata;
+import static java.util.logging.Level.WARNING;
 
 
 /**
@@ -23,7 +24,7 @@ import de.sb.java.TypeMetadata;
  */
 @TypeMetadata(copyright = "2015-2015 Sascha Baumeister, all rights reserved", version = "1.0.0", authors = "Sascha Baumeister")
 public abstract class EntityTest {
-	static private final String PERSISTENCE_UNIT_NAME = "brokertest";
+	static private final String PERSISTENCE_UNIT_NAME = "broker";
 	static private EntityManagerFactory ENTITY_MANAGER_FACTORY;
 	static private ValidatorFactory ENTITY_VALIDATOR_FACTORY = Validation.buildDefaultValidatorFactory();
 
@@ -32,24 +33,27 @@ public abstract class EntityTest {
 
 	/**
 	 * Returns the entity manager factory.
+	 *
 	 * @return the entity manager factory
 	 */
-	public EntityManagerFactory getEntityManagerFactory () {
+	public EntityManagerFactory getEntityManagerFactory() {
 		return ENTITY_MANAGER_FACTORY;
 	}
 
 
 	/**
 	 * Returns the entity validator factory.
+	 *
 	 * @return the entity validator factory
 	 */
-	public ValidatorFactory getEntityValidatorFactory () {
+	public ValidatorFactory getEntityValidatorFactory() {
 		return ENTITY_VALIDATOR_FACTORY;
 	}
 
 
 	/**
 	 * Returns the waste basket.
+	 *
 	 * @return the identities of entities to be deleted after each test
 	 */
 	public Set<Long> getWasteBasket() {
@@ -61,7 +65,7 @@ public abstract class EntityTest {
 	 * Creates a new entity manager factory.
 	 */
 	@BeforeClass
-	static public void createClassResources () {
+	static public void createClassResources() {
 		ENTITY_MANAGER_FACTORY = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
 	}
 
@@ -70,7 +74,7 @@ public abstract class EntityTest {
 	 * Closes the entity manager factory.
 	 */
 	@AfterClass
-	static public void closeClassResources () {
+	static public void closeClassResources() {
 		ENTITY_MANAGER_FACTORY.close();
 	}
 
@@ -80,7 +84,7 @@ public abstract class EntityTest {
 	 * and clears the latter.
 	 */
 	@After
-	public void emptyWasteBasket () {
+	public void emptyWasteBasket() {
 		final EntityManager entityManager = ENTITY_MANAGER_FACTORY.createEntityManager();
 		try {
 			entityManager.getTransaction().begin();
