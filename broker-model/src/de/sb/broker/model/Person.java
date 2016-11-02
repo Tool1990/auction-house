@@ -3,6 +3,7 @@ package de.sb.broker.model;
 import javax.persistence.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
@@ -16,6 +17,7 @@ public class Person extends BaseEntity {
 
 	@Column(unique = true, nullable = false)
 	@NotNull
+	@Size(min=1, max=16)
 	private String alias;
 
 	@Column(nullable = false)

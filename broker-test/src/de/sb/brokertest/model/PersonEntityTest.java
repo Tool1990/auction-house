@@ -27,6 +27,16 @@ public class PersonEntityTest extends EntityTest {
 		assertEquals(1, constraintViolations.size());
 		populateTestPerson();
 
+		testPerson.setAlias("");
+		constraintViolations = validator.validate(testPerson);
+		assertEquals(1, constraintViolations.size());
+		populateTestPerson();
+
+		testPerson.setAlias("tooLongString1234");
+		constraintViolations = validator.validate(testPerson);
+		assertEquals(1, constraintViolations.size());
+		populateTestPerson();
+
 		testPerson.getName().setFamily(null);
 		testPerson.getName().setGiven(null);
 		constraintViolations = validator.validate(testPerson);
@@ -51,7 +61,7 @@ public class PersonEntityTest extends EntityTest {
 	}
 
 	@Test
-	public void testLifeCycle(){
+	public void testLifeCycle() {
 		EntityManager entityManager = this.getEntityManagerFactory().createEntityManager();
 		entityManager.getTransaction().begin();
 		Person testPerson = populateTestPerson();
@@ -61,7 +71,7 @@ public class PersonEntityTest extends EntityTest {
 		entityManager.close();
 	}
 
-	private Person populateTestPerson(){
+	private Person populateTestPerson() {
 		testPerson.setAlias("testAlias");
 		testPerson.setGroup(Person.Group.USER);
 		testPerson.setPasswordHash(Person.passwordHash("123"));
