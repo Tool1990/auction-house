@@ -127,7 +127,7 @@ public class AuctionEntityTest extends EntityTest {
             em.refresh(testPerson);
             assertEquals(auction.getSeller().getAlias(), em.find(Person.class, testPerson.getIdentity()).getAlias());
             em.getTransaction().commit();
-            
+
         }
 
         finally{
