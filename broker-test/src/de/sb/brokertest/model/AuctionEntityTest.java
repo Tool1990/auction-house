@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 
 
 public class AuctionEntityTest extends EntityTest {
@@ -99,31 +100,41 @@ public class AuctionEntityTest extends EntityTest {
 
         em.getTransaction().begin();
 
-         final Person testPerson = populateTestPerson();
-         em.persist(testPerson);
-         em.getTransaction().commit();
+            Person testPerson = populateTestPerson();
+            em.persist(testPerson);
+            em.getTransaction().commit();
 
 
-         em.getTransaction().begin();
+            em.getTransaction().begin();
 
-         this.auction = new Auction(testPerson);
-         createTestAuction();
-         em.persist(auction);
-         em.getTransaction().commit();
+            this.auction = new Auction(testPerson);
+            createTestAuction();
+            em.persist(auction);
+            em.getTransaction().commit();
+            this.getWasteBasket().add(auction.getIdentity());
+            this.getWasteBasket().add(testPerson.getIdentity());
 
+            em.getTransaction().begin();
+            em.refresh(testPerson);
+            assertEquals(testPerson.getAlias(), auction.getSeller().getAlias());
+            em.getTransaction().commit();
 
+            em.getTransaction().begin();
 
-         //add created entity to waste basket
-         this.getWasteBasket().add(auction.getIdentity());
-         this.getWasteBasket().add(testPerson.getIdentity());
-         //empty waste basket
-         this.emptyWasteBasket();
+            testPerson = em.getReference(Person.class, auction.getSellerReference());
+            System.out.println(testPerson.getAlias());
+            testPerson.setAlias("wrongy");
+            em.refresh(testPerson);
+            assertEquals(auction.getSeller().getAlias(), em.find(Person.class, testPerson.getIdentity()).getAlias());
+            em.getTransaction().commit();
+            
         }
 
         finally{
             if(em.getTransaction().isActive()){
                 em.getTransaction().rollback();
             }
+            this.emptyWasteBasket();
             //close Manager
             em.close();
             emf.close();
