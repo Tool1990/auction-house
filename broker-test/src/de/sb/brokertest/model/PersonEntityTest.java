@@ -80,15 +80,12 @@ public class PersonEntityTest extends EntityTest {
 			entityManager.getTransaction().commit();
 			this.getWasteBasket().add(testPerson.getIdentity());
 
-			testPerson = entityManager.find(Person.class, testPerson.getIdentity());
-			testPerson.getAuctions().add(testAuction);
-
 			entityManager.getTransaction().begin();
 			entityManager.persist(testAuction);
 			entityManager.getTransaction().commit();
 			//this.getWasteBasket().add(testAuction.getIdentity());
 
-			testPerson = entityManager.find(Person.class, testPerson.getIdentity());
+			entityManager.refresh(testPerson);
 			assertEquals(1, testPerson.getAuctions().size());
 		} catch (Exception e) {
 			entityManager.getTransaction().rollback();
