@@ -65,29 +65,34 @@ public class PersonEntityTest extends EntityTest {
 	public void testLifeCycle() {
 		final EntityManager entityManager = this.getEntityManagerFactory().createEntityManager();
 
-		try {
-			entityManager.getTransaction().begin();
-			Person testPerson = populateTestPerson();
-			entityManager.persist(testPerson);
-			entityManager.getTransaction().commit();
-			this.getWasteBasket().add(testPerson.getIdentity());
-		} catch (Exception e) {
-			entityManager.getTransaction().rollback();
-		} finally {
-			entityManager.close();
-		}
+		Person testPerson = populateTestPerson();
+
+		Auction testAuction = new Auction(testPerson);
+		testAuction.setTitle("testAuction");
+		testAuction.setUnitCount((short) 1);
+		testAuction.setAskingPrice(100);
+		testAuction.setClosureTimestamp(System.currentTimeMillis() + 1000*60*60*24*14);
+		testAuction.setDescription("testDescription");
 
 		try {
 			entityManager.getTransaction().begin();
-			Person testPerson = populateTestPerson();
+			entityManager.persist(testPerson);
+			entityManager.getTransaction().commit();
+			this.getWasteBasket().add(testPerson.getIdentity());
+
 			testPerson = entityManager.find(Person.class, testPerson.getIdentity());
-			Auction testAuction = new Auction(testPerson);
+			testPerson.getAuctions().add(testAuction);
 
-			entityManager.persist(testPerson);
+			entityManager.getTransaction().begin();
+			entityManager.persist(testAuction);
 			entityManager.getTransaction().commit();
-			this.getWasteBasket().add(testPerson.getIdentity());
+			//this.getWasteBasket().add(testAuction.getIdentity());
+
+			testPerson = entityManager.find(Person.class, testPerson.getIdentity());
+			assertEquals(1, testPerson.getAuctions().size());
 		} catch (Exception e) {
 			entityManager.getTransaction().rollback();
+			e.printStackTrace();
 		} finally {
 			entityManager.close();
 		}
