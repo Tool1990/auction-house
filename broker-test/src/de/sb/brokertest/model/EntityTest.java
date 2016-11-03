@@ -103,10 +103,10 @@ public abstract class EntityTest {
 		}
 	}
 
-	public static String generateString(int lenght){
+	public static String generateString(int length) {
 		StringBuilder stringBuilder = new StringBuilder();
 
-		for (int i = 0; i < lenght; i++){
+		for (int i = 0; i < length; i++) {
 			stringBuilder.append("*");
 		}
 

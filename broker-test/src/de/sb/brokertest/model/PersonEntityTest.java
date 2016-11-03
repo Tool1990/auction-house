@@ -1,5 +1,6 @@
 package de.sb.brokertest.model;
 
+import de.sb.broker.model.Auction;
 import de.sb.broker.model.Person;
 import org.junit.Test;
 
@@ -62,13 +63,34 @@ public class PersonEntityTest extends EntityTest {
 
 	@Test
 	public void testLifeCycle() {
-		EntityManager entityManager = this.getEntityManagerFactory().createEntityManager();
-		entityManager.getTransaction().begin();
-		Person testPerson = populateTestPerson();
-		entityManager.persist(testPerson);
-		entityManager.getTransaction().commit();
-		this.getWasteBasket().add(testPerson.getIdentity());
-		entityManager.close();
+		final EntityManager entityManager = this.getEntityManagerFactory().createEntityManager();
+
+		try {
+			entityManager.getTransaction().begin();
+			Person testPerson = populateTestPerson();
+			entityManager.persist(testPerson);
+			entityManager.getTransaction().commit();
+			this.getWasteBasket().add(testPerson.getIdentity());
+		} catch (Exception e) {
+			entityManager.getTransaction().rollback();
+		} finally {
+			entityManager.close();
+		}
+
+		try {
+			entityManager.getTransaction().begin();
+			Person testPerson = populateTestPerson();
+			testPerson = entityManager.find(Person.class, testPerson.getIdentity());
+			Auction testAuction = new Auction(testPerson);
+
+			entityManager.persist(testPerson);
+			entityManager.getTransaction().commit();
+			this.getWasteBasket().add(testPerson.getIdentity());
+		} catch (Exception e) {
+			entityManager.getTransaction().rollback();
+		} finally {
+			entityManager.close();
+		}
 	}
 
 	private Person populateTestPerson() {
