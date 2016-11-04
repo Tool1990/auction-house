@@ -10,6 +10,7 @@ import javax.validation.Validator;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class PersonEntityTest extends EntityTest {
 	Person testPerson = new Person();
@@ -63,7 +64,7 @@ public class PersonEntityTest extends EntityTest {
 
 	@Test
 	public void testLifeCycle() {
-		final EntityManager entityManager = this.getEntityManagerFactory().createEntityManager();
+		EntityManager entityManager = this.getEntityManagerFactory().createEntityManager();
 
 		Person testPerson = populateTestPerson();
 
@@ -93,6 +94,32 @@ public class PersonEntityTest extends EntityTest {
 		} finally {
 			entityManager.close();
 		}
+
+		testAuction = new Auction(null);
+		testAuction.setTitle("testAuction");
+		testAuction.setUnitCount((short) 1);
+		testAuction.setAskingPrice(100);
+		testAuction.setClosureTimestamp(System.currentTimeMillis() + 1000*60*60*24*14);
+		testAuction.setDescription("testDescription");
+
+		entityManager = this.getEntityManagerFactory().createEntityManager();
+		boolean exception = false;
+
+		try {
+			entityManager.getTransaction().begin();
+			entityManager.persist(testAuction);
+			entityManager.getTransaction().commit();
+
+			entityManager.refresh(testPerson);
+			assertEquals(1, testPerson.getAuctions().size());
+		} catch (Exception e) {
+			exception = true;
+			entityManager.getTransaction().rollback();
+		} finally {
+			entityManager.close();
+		}
+
+		assertTrue(exception);
 	}
 
 	private Person populateTestPerson() {
