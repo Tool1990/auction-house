@@ -79,6 +79,13 @@ public class BidEntityTest extends EntityTest {
 				
 				assertNotNull(testBid);		//test create
 				
+				entityManager.refresh(testBid);
+				assertEquals(testAuction.getIdentity(), testBid.getAuctionReference()); //mapped by
+				assertEquals(testBidder.getIdentity(), testBid.getBidderReference()); //mapped by
+				
+				assertNotEquals(testAuction.getSeller(), testBidder);
+				assertNotEquals(testAuction.getAskingPrice(), testBid.getPrice());
+				
 				Bid bid1 = entityManager.find(Bid.class, testBid.getIdentity());
 				assertEquals(testBid.getIdentity(), bid1.getIdentity());	//test key	
 				
