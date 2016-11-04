@@ -1,7 +1,5 @@
-package de.sb.brokertest.model;
+package de.sb.broker.model;
 
-import de.sb.broker.model.Auction;
-import de.sb.broker.model.Person;
 import org.junit.Test;
 
 import javax.persistence.EntityManager;

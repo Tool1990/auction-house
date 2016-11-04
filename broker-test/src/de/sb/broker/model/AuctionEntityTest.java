@@ -1,11 +1,7 @@
-package de.sb.brokertest.model;
+package de.sb.broker.model;
 
 
-import de.sb.broker.model.Auction;
-import de.sb.broker.model.Person;
-import org.junit.After;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -13,8 +9,6 @@ import javax.persistence.Persistence;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;

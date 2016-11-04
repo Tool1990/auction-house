@@ -1,6 +1,5 @@
-package de.sb.brokertest.model;
+package de.sb.broker.model;
 
-import de.sb.broker.model.BaseEntity;
 import de.sb.java.TypeMetadata;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -19,7 +18,7 @@ import static java.util.logging.Level.WARNING;
 
 
 /**
- * JUnit base class for brokertest entity tests. It realizes once-per-all-tests entity manager factory
+ * JUnit base class for broker entity tests. It realizes once-per-all-tests entity manager factory
  * and validator factory creation, and once-per-any-test entity cleanup.
  */
 @TypeMetadata(copyright = "2015-2015 Sascha Baumeister, all rights reserved", version = "1.0.0", authors = "Sascha Baumeister")

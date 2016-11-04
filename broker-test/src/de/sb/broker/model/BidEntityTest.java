@@ -1,8 +1,4 @@
-package de.sb.brokertest.model;
-
-import de.sb.broker.model.Auction;
-import de.sb.broker.model.Bid;
-import de.sb.broker.model.Person;
+package de.sb.broker.model;
 
 import org.junit.Test;
 

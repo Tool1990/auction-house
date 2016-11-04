@@ -1,4 +1,4 @@
-package de.sb.brokertest.rest;
+package de.sb.broker.rest;
 
 import static java.util.logging.Level.INFO;
 import java.io.BufferedReader;
@@ -25,7 +25,7 @@ import com.sun.net.httpserver.HttpServer;
 
 
 /**
- * JUnit base class for brokertest service tests. It realizes once-per-all-tests embedded HTTP container
+ * JUnit base class for broker service tests. It realizes once-per-all-tests embedded HTTP container
  * start/stop on {@link http://localhost:8001/services} for REST service access, and
  * once-per-any-test entity cleanup based on {@linkplain EntityService}. Note that the HTTP
  * container can alternatively be started as a separate application.

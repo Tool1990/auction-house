@@ -1,4 +1,4 @@
-package de.sb.brokertest.model;
+package de.sb.broker.model;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Persistence;
