@@ -8,6 +8,7 @@ import javax.validation.Validator;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class PersonEntityTest extends EntityTest {
@@ -15,48 +16,39 @@ public class PersonEntityTest extends EntityTest {
 
 	@Test
 	public void testConstraints() {
-		Validator validator = this.getEntityValidatorFactory().getValidator();
+		final Validator validator = this.getEntityValidatorFactory().getValidator();
 		Person testPerson = populateTestPerson();
-		Set<ConstraintViolation<Person>> constraintViolations;
 
-		constraintViolations = validator.validate(testPerson);
-		assertEquals(0, constraintViolations.size());
+		assertEquals(0, validator.validate(testPerson).size());
 
 		testPerson.setAlias(null);
-		constraintViolations = validator.validate(testPerson);
-		assertEquals(1, constraintViolations.size());
+		assertEquals(1, validator.validate(testPerson).size());
 		populateTestPerson();
 
 		testPerson.setAlias("");
-		constraintViolations = validator.validate(testPerson);
-		assertEquals(1, constraintViolations.size());
+		assertEquals(1, validator.validate(testPerson).size());
 		populateTestPerson();
 
 		testPerson.setAlias(this.generateString(17));
-		constraintViolations = validator.validate(testPerson);
-		assertEquals(1, constraintViolations.size());
+		assertEquals(1, validator.validate(testPerson).size());
 		populateTestPerson();
 
 		testPerson.getName().setFamily(null);
 		testPerson.getName().setGiven(null);
-		constraintViolations = validator.validate(testPerson);
-		assertEquals(2, constraintViolations.size());
+		assertEquals(2, validator.validate(testPerson).size());
 		populateTestPerson();
 
 		testPerson.getContact().setPhone(null);
 		testPerson.getContact().setEmail("test@test.t");
-		constraintViolations = validator.validate(testPerson);
-		assertEquals(2, constraintViolations.size());
+		assertEquals(2, validator.validate(testPerson).size());
 		populateTestPerson();
 
 		testPerson.getAddress().setCity(null);
-		constraintViolations = validator.validate(testPerson);
-		assertEquals(1, constraintViolations.size());
+		assertEquals(1, validator.validate(testPerson).size());
 		populateTestPerson();
 
 		testPerson.setGroup(null);
-		constraintViolations = validator.validate(testPerson);
-		assertEquals(1, constraintViolations.size());
+		assertEquals(1, validator.validate(testPerson).size());
 		populateTestPerson();
 	}
 
@@ -78,30 +70,29 @@ public class PersonEntityTest extends EntityTest {
 			entityManager.persist(testPerson);
 			entityManager.getTransaction().commit();
 			this.getWasteBasket().add(testPerson.getIdentity());
+			entityManager.clear();
 
 			entityManager.getTransaction().begin();
 			entityManager.persist(testAuction);
 			entityManager.getTransaction().commit();
-			//this.getWasteBasket().add(testAuction.getIdentity());
-
-			entityManager.refresh(testPerson);
-			assertEquals(1, testPerson.getAuctions().size());
+			this.getWasteBasket().add(testAuction.getIdentity());
 		} catch (Exception e) {
 			entityManager.getTransaction().rollback();
-			e.printStackTrace();
+			throw e;
 		} finally {
 			entityManager.close();
 		}
 
-		testAuction = new Auction(null);
-		testAuction.setTitle("testAuction");
-		testAuction.setUnitCount((short) 1);
-		testAuction.setAskingPrice(100);
-		testAuction.setClosureTimestamp(System.currentTimeMillis() + 1000*60*60*24*14);
-		testAuction.setDescription("testDescription");
+		entityManager.clear();
+		testAuction = entityManager.find(Auction.class, testAuction.getIdentity());
+		assertNotNull(testAuction);
+
+
 
 		entityManager = this.getEntityManagerFactory().createEntityManager();
-		boolean exception = false;
+		boolean exceptionMode = false;
+
+		//update, clear, find, löschen, find
 
 		try {
 			entityManager.getTransaction().begin();
@@ -111,13 +102,13 @@ public class PersonEntityTest extends EntityTest {
 			entityManager.refresh(testPerson);
 			assertEquals(1, testPerson.getAuctions().size());
 		} catch (Exception e) {
-			exception = true;
+			exceptionMode = true;
 			entityManager.getTransaction().rollback();
 		} finally {
 			entityManager.close();
 		}
 
-		assertTrue(exception);
+		assertTrue(exceptionMode);
 	}
 
 	private Person populateTestPerson() {

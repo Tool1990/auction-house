@@ -5,6 +5,7 @@ import de.sb.java.validation.Inequal;
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,11 +21,11 @@ public class Auction extends BaseEntity {
 	private String title;
 
 	@Column(nullable = false)
-	@Min(0)
+	@Min(1)
 	private short unitCount;
 
 	@Column(nullable = false)
-	@Min(0)
+	@Min(1)
 	private long askingPrice;
 
 	@Column(nullable = false)
@@ -34,7 +35,7 @@ public class Auction extends BaseEntity {
 	@NotNull
 	private String description;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(cascade = CascadeType.REMOVE)
 	@JoinColumn(name = "sellerReference")
 	@NotNull
 	private Person seller;

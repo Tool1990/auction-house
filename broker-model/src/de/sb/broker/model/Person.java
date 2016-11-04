@@ -22,6 +22,7 @@ public class Person extends BaseEntity {
 
 	@Column(nullable = false)
 	@NotNull
+	@Size(min = 32, max = 32)
 	private byte[] passwordHash;
 
 	@Enumerated(EnumType.STRING)

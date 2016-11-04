@@ -1,6 +1,7 @@
 package de.sb.broker.model;
 
 import javax.persistence.*;
+import javax.validation.constraints.Min;
 
 @Entity
 @Table(name="BaseEntity", schema = "broker")
@@ -13,6 +14,7 @@ public abstract class BaseEntity implements Comparable<BaseEntity>{
 	private long identity;
 
 	@Version
+	@Min(1)
 	private int version;
 
 	@Column(nullable = false)
