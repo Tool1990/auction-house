@@ -11,8 +11,7 @@ import javax.validation.Validator;
 import java.util.Calendar;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.*;
 
 
 public class AuctionEntityTest extends EntityTest {
@@ -47,38 +46,40 @@ public class AuctionEntityTest extends EntityTest {
 
     @Test
     public void testConstraints(){
-        Validator val = this.getEntityValidatorFactory().getValidator();
+        final Validator val = this.getEntityValidatorFactory().getValidator();
         auction = new Auction(populateTestPerson());
-        Set<ConstraintViolation<Auction>> constraintViolations;
         createTestAuction();
 
-        constraintViolations = val.validate(auction);
-        assertEquals(0, constraintViolations.size());
+
+        assertEquals(0, val.validate(auction).size());
         createTestAuction();
 
         auction.setAskingPrice(-1);
-        constraintViolations = val.validate(auction);
-        assertEquals(1, constraintViolations.size());
+        assertEquals(1, val.validate(auction).size());
         createTestAuction();
 
         auction.setUnitCount((short) -1);
-        constraintViolations = val.validate(auction);
-        assertEquals(1, constraintViolations.size());
+        assertEquals(1, val.validate(auction).size());
         createTestAuction();
 
         auction.setClosureTimestamp(auction.getCreationTimestamp());
-        constraintViolations = val.validate(auction);
-        assertEquals(1, constraintViolations.size());
+        assertEquals(1, val.validate(auction).size());
         createTestAuction();
 
         auction.setDescription(null);
-        constraintViolations = val.validate(auction);
-        assertEquals(1, constraintViolations.size());
+        assertEquals(1, val.validate(auction).size());
         createTestAuction();
 
         auction.setTitle(null);
-        constraintViolations = val.validate(auction);
-        assertEquals(1, constraintViolations.size());
+        assertEquals(1, val.validate(auction).size());
+        createTestAuction();
+
+        auction.setTitle(this.generateString(257));
+        assertEquals(1, val.validate(auction).size());
+        createTestAuction();
+
+        auction.setDescription(this.generateString(8190));
+        assertEquals(1, val.validate(auction).size());
         createTestAuction();
 
     }
@@ -89,38 +90,47 @@ public class AuctionEntityTest extends EntityTest {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("broker");
         EntityManager em = emf.createEntityManager();
 
-
+        // Write test
         try{
 
         em.getTransaction().begin();
 
+
             Person testPerson = populateTestPerson();
             em.persist(testPerson);
             em.getTransaction().commit();
+            this.getWasteBasket().add(testPerson.getIdentity());
+            em.clear();
 
-
+            // Initital write test
             em.getTransaction().begin();
-
             this.auction = new Auction(testPerson);
             createTestAuction();
             em.persist(auction);
             em.getTransaction().commit();
             this.getWasteBasket().add(auction.getIdentity());
-            this.getWasteBasket().add(testPerson.getIdentity());
+            long auctionIdentity = auction.getIdentity();
+            em.clear();
 
+
+            // Update Test
             em.getTransaction().begin();
-            em.refresh(testPerson);
-            assertEquals(testPerson.getAlias(), auction.getSeller().getAlias());
-            em.getTransaction().commit();
+            auction = em.find(Auction.class, auctionIdentity);
+            String oldTitle = auction.getTitle();
+            auction.setTitle("new Title");
+            this.getWasteBasket().add(auction.getIdentity());
+            em.flush();
+            String newTitle = em.find(Auction.class, auction.getIdentity()).getTitle();
+            assertNotSame(oldTitle, newTitle);
+            em.clear();
 
-            em.getTransaction().begin();
+            // Delete Cascade Test
+            long refPerson = em.find(Auction.class, auctionIdentity).getSellerReference();
+            em.remove(em.find(Auction.class, auctionIdentity));
+            em.flush();
+            assertNull(em.find(Person.class, refPerson));
 
-            testPerson = em.getReference(Person.class, auction.getSellerReference());
-            System.out.println(testPerson.getAlias());
-            testPerson.setAlias("wrongy");
-            em.refresh(testPerson);
-            assertEquals(auction.getSeller().getAlias(), em.find(Person.class, testPerson.getIdentity()).getAlias());
-            em.getTransaction().commit();
+
 
         }
 
@@ -129,10 +139,10 @@ public class AuctionEntityTest extends EntityTest {
                 em.getTransaction().rollback();
             }
             this.emptyWasteBasket();
-            //close Manager
             em.close();
             emf.close();
         }
+
 
     }
 

@@ -3,6 +3,7 @@ package de.sb.broker.model;
 import de.sb.java.validation.Inequal;
 
 import javax.persistence.*;
+import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -18,21 +19,26 @@ public class Auction extends BaseEntity {
 
 	@Column(nullable = false)
 	@NotNull
+	@Size(min=1, max=255)
 	private String title;
 
 	@Column(nullable = false)
 	@Min(1)
 	private short unitCount;
 
+	@NotNull
 	@Column(nullable = false)
 	@Min(1)
 	private long askingPrice;
 
+	@NotNull
+	@Valid
 	@Column(nullable = false)
 	private long closureTimestamp;
 
 	@Column(nullable = false)
 	@NotNull
+	@Size(min=1, max=8189)
 	private String description;
 
 	@ManyToOne(cascade = CascadeType.REMOVE)
