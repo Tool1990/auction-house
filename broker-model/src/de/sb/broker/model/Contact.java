@@ -4,6 +4,7 @@ import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import javax.xml.bind.annotation.XmlElement;
 
 @Embeddable
 public class Contact {
@@ -13,10 +14,12 @@ public class Contact {
 	@Column(unique = true, nullable = false)
 	@NotNull
 	@Pattern(regexp = EMAIL_PATTERN)
+	@XmlElement
 	private String email;
 
 	@Column(nullable = false)
 	@NotNull
+	@XmlElement
 	private String phone;
 	
 	public String getEmail() {

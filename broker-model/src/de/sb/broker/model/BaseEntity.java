@@ -2,22 +2,29 @@ package de.sb.broker.model;
 
 import javax.persistence.*;
 import javax.validation.constraints.Min;
+import javax.xml.bind.annotation.*;
 
 @Entity
 @Table(name="BaseEntity", schema = "broker")
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "discriminator", discriminatorType = DiscriminatorType.STRING)
+@XmlAccessorType(XmlAccessType.NONE)
+@XmlType
+@XmlSeeAlso({Person.class, Auction.class, Bid.class})
 public abstract class BaseEntity implements Comparable<BaseEntity>{
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@XmlElement
 	private long identity;
 
 	@Version
 	@Min(1)
+	@XmlElement
 	private int version;
 
 	@Column(nullable = false)
+	@XmlElement
 	private long creationTimestamp;
 	
 	public BaseEntity(){

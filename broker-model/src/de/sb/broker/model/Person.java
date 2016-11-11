@@ -4,6 +4,7 @@ import javax.persistence.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlElement;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
@@ -18,6 +19,7 @@ public class Person extends BaseEntity {
 	@Column(unique = true, nullable = false)
 	@NotNull
 	@Size(min=1, max=16)
+	@XmlElement
 	private String alias;
 
 	@Column(nullable = false)
@@ -28,21 +30,25 @@ public class Person extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "GroupAlias", nullable = false)
 	@NotNull
+	@XmlElement
 	private Group group;
 
 	@Embedded
 	@NotNull
 	@Valid
+	@XmlElement
 	private Name name;
 
 	@Embedded
 	@NotNull
 	@Valid
+	@XmlElement
 	private Contact contact;
 
 	@Embedded
 	@NotNull
 	@Valid
+	@XmlElement
 	private Address address;
 
 	@OneToMany(mappedBy = "seller")

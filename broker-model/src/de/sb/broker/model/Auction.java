@@ -7,6 +7,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlElement;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,25 +21,30 @@ public class Auction extends BaseEntity {
 	@Column(nullable = false)
 	@NotNull
 	@Size(min=1, max=255)
+	@XmlElement
 	private String title;
 
 	@Column(nullable = false)
 	@Min(1)
+	@XmlElement
 	private short unitCount;
 
 	@NotNull
 	@Column(nullable = false)
 	@Min(1)
+	@XmlElement
 	private long askingPrice;
 
 	@NotNull
 	@Valid
 	@Column(nullable = false)
+	@XmlElement
 	private long closureTimestamp;
 
 	@Column(nullable = false)
 	@NotNull
 	@Size(min=1, max=8189)
+	@XmlElement
 	private String description;
 
 	@ManyToOne(cascade = CascadeType.REMOVE)
@@ -69,10 +75,12 @@ public class Auction extends BaseEntity {
 		return seller == null ? 0 : seller.getIdentity();
 	}
 
+	@XmlElement
 	public boolean isClosed() {
 		return System.currentTimeMillis() > closureTimestamp ? true : false;
 	}
 
+	@XmlElement
 	public boolean isSealed() {
 		return !bids.isEmpty() || isClosed();
 	}

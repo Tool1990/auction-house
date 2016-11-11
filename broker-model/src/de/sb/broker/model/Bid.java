@@ -5,6 +5,7 @@ import de.sb.java.validation.Inequal;
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import javax.xml.bind.annotation.XmlElement;
 
 @Entity
 @Table(name = "Bid", schema = "broker", uniqueConstraints = @UniqueConstraint(columnNames = {"bidderReference", "auctionReference"}))
@@ -16,6 +17,7 @@ public class Bid extends BaseEntity {
 
 	@Min(0)
 	@Column(nullable = false)
+	@XmlElement
 	private long price;
 
 	@ManyToOne(cascade = CascadeType.REMOVE)
