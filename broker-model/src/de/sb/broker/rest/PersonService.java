@@ -20,13 +20,20 @@ public class PersonService {
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the people matching the given criteria, with null or missing parameters identifying omitted criteria.
-    public Person[] getPeople(@QueryParam("alias") String alias) {
+    public Person[] getPeople(@QueryParam("alias") String alias, @QueryParam("familyName") String familyName, @QueryParam("givenName") String givenName) {
 
         //TODO: weitere QueryParams einf�gen
 
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Query q = entityManager.createQuery("select p.identity from Person as p where :alias is null or p.alias = :alias").setParameter("alias", alias);
+       Query q =null;
+        if (familyName == null  && alias == null){
+            q = entityManager.createQuery("select p.identity from Person as p");
+        }else {
+
+            q = entityManager.createQuery("select p.identity from Person as p where  p.alias = :alias and :familyName is null or p.name.family = :familyName").setParameter("alias", alias).setParameter("familyName", familyName);
+        }
         List resultList = q.getResultList();
+
         Person[] matchingPeople = new Person[resultList.size()];
         for (int i = 0; i < resultList.size(); i++) {
             matchingPeople[i] = entityManager.find(Person.class, resultList.get(i));
@@ -91,13 +98,13 @@ public class PersonService {
     public long setPerson(Person personTemplate,@HeaderParam("set-password") String newPassword) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         Person person = entityManager.find(Person.class, personTemplate.getIdentity());
-        long idenentity = 0;
+        long identity = 0;
         if (person == null) {
             try {
                 entityManager.getTransaction().begin();
                 entityManager.persist(personTemplate);
                 entityManager.getTransaction().commit();
-                idenentity = person.getIdentity();
+                identity = person.getIdentity();
             } catch (Exception e) {
             } finally {
                 entityManager.close();
@@ -107,17 +114,22 @@ public class PersonService {
                 entityManager.getTransaction().begin();
                 person.setAlias(personTemplate.getAlias());
                 person.setGroup(personTemplate.getGroup());
+                person.getAddress().setCity(personTemplate.getAddress().getCity());
+                person.getAddress().setPostCode(personTemplate.getAddress().getPostCode());
+                person.getAddress().setStreet(personTemplate.getAddress().getStreet());
+                person.getName().setFamily(personTemplate.getName().getFamily());
+                person.getName().setGiven(personTemplate.getName().getGiven());
                 if(newPassword!= "" && newPassword != null) {
                     person.setPasswordHash(personTemplate.getPasswordHash());
                 }
-                idenentity = person.getIdentity();
+                identity = person.getIdentity();
                 entityManager.flush();
             } catch (Exception e) {
             } finally {
                 entityManager.close();
             }
         }
-        return idenentity;
+        return identity;
     }
 }
 
