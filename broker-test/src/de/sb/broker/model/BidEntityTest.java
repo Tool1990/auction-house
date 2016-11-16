@@ -9,7 +9,9 @@ import javax.persistence.*;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 
-import static org.junit.Assert.*;		
+import static org.junit.Assert.*;
+
+
 
 public class BidEntityTest extends EntityTest {
 	
@@ -79,8 +81,8 @@ public class BidEntityTest extends EntityTest {
 				assertEquals(testAuction.getIdentity(), testBid.getAuctionReference()); //mapped by
 				assertEquals(testBidder.getIdentity(), testBid.getBidderReference()); //mapped by
 				
-				assertNotEquals(testAuction.getSeller(), testBidder);
-				assertNotEquals(testAuction.getAskingPrice(), testBid.getPrice());
+				assertNotSame(testAuction.getSeller(), testBidder);
+				assertNotSame(testAuction.getAskingPrice(), testBid.getPrice());
 				
 				Bid bid1 = entityManager.find(Bid.class, testBid.getIdentity());
 				assertEquals(testBid.getIdentity(), bid1.getIdentity());	//test key	

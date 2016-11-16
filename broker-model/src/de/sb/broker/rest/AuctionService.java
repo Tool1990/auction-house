@@ -20,7 +20,7 @@ public class AuctionService {
     //Returns the auctions matching the given criteria, with null or missing parameters identifying omitted criteria.
     public Auction[] getAuctions(@QueryParam("title") String title) {
 
-        //TODO: weitere QueryParams einfügen
+        //TODO: weitere QueryParams einfï¿½gen
 
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         Query q = entityManager.createQuery("select a.identity from Auction as a where :title is null or a.title = :title").setParameter("title", title);
@@ -72,3 +72,4 @@ public class AuctionService {
         }
     }
 }
+

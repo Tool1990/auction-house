@@ -22,7 +22,7 @@ public class PersonService {
     //Returns the people matching the given criteria, with null or missing parameters identifying omitted criteria.
     public Person[] getPeople(@QueryParam("alias") String alias) {
 
-        //TODO: weitere QueryParams einfügen
+        //TODO: weitere QueryParams einfï¿½gen
 
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         Query q = entityManager.createQuery("select p.identity from Person as p where :alias is null or p.alias = :alias").setParameter("alias", alias);
@@ -82,4 +82,42 @@ public class PersonService {
         return matchingBids;
     }
 
+
+
+    @PUT
+    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @Path("people")
+    //Creates or modifies an auction from the given template data. Note that an auction may only be modified as long as it is not sealed (i.e. is open and still without bids).
+    public long setPerson(Person personTemplate,@HeaderParam("set-password") String newPassword) {
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
+        Person person = entityManager.find(Person.class, personTemplate.getIdentity());
+        long idenentity = 0;
+        if (person == null) {
+            try {
+                entityManager.getTransaction().begin();
+                entityManager.persist(personTemplate);
+                entityManager.getTransaction().commit();
+                idenentity = person.getIdentity();
+            } catch (Exception e) {
+            } finally {
+                entityManager.close();
+            }
+        } else {
+            try {
+                entityManager.getTransaction().begin();
+                person.setAlias(personTemplate.getAlias());
+                person.setGroup(personTemplate.getGroup());
+                if(newPassword!= "" && newPassword != null) {
+                    person.setPasswordHash(personTemplate.getPasswordHash());
+                }
+                idenentity = person.getIdentity();
+                entityManager.flush();
+            } catch (Exception e) {
+            } finally {
+                entityManager.close();
+            }
+        }
+        return idenentity;
+    }
 }
+
