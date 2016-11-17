@@ -14,9 +14,19 @@ CREATE TABLE BaseEntity (
 	PRIMARY KEY (identity)
 ) ENGINE=InnoDB;
 
+CREATE TABLE Document (
+	documentIdentity BIGINT NOT NULL,
+	type VARCHAR(16) NOT NULL,
+	documentHash BINARY(32) NOT NULL,
+	content MEDIUMBLOB NOT NULL,
+	PRIMARY KEY (documentIdentity),
+	UNIQUE KEY (documentHash),
+	FOREIGN KEY (documentIdentity) REFERENCES BaseEntity (identity) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE Person (
 	personIdentity BIGINT NOT NULL,
-	documentReference BIGINT NOT NULL,
+	documentReference BIGINT,
 	alias CHAR(16) NOT NULL,
 	passwordHash BINARY(32) NOT NULL,
 	groupAlias ENUM("USER", "ADMIN") NOT NULL,
@@ -60,15 +70,6 @@ CREATE TABLE Bid (
 	FOREIGN KEY (auctionReference) REFERENCES Auction (auctionIdentity) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE Document (
-  PRIMARY KEY (documentIdentity),
-	documentIdentity BIGINT NOT NULL,
-	type VARCHAR(16) NOT NULL,
-	documentHash BINARY(32) NOT NULL,
-	content MEDIUMBLOB NOT NULL,
-	UNIQUE KEY (documentHash),
-	FOREIGN KEY (documentIdentity) REFERENCES BaseEntity (identity) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB;
 
 -- define views
 CREATE ALGORITHM=MERGE VIEW JoinedEntity AS
