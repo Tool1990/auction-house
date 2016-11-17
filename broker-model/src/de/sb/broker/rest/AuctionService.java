@@ -18,16 +18,21 @@ public class AuctionService {
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the auctions matching the given criteria, with null or missing parameters identifying omitted criteria.
-    public Auction[] getAuctions(@QueryParam("title") String title) {
+    public Auction[] getAuctions(@QueryParam("title") String title, @QueryParam("priceMin") long priceMin, @QueryParam("priceMax") long priceMax) {
 
-        //TODO: weitere QueryParams einf�gen
 
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Query q = entityManager.createQuery("select a.identity from Auction as a where :title is null or a.title = :title").setParameter("title", title);
+        Query q = null;
+        if (priceMax == 0) {
+            q = entityManager.createQuery("select a.identity from Auction as a where (:title is null or a.title = :title) and (:priceMin is null or a.askingPrice >= :priceMin)").setParameter("title", title).setParameter("priceMin", priceMin);
+
+        } else {
+            q = entityManager.createQuery("select a.identity from Auction as a where (:title is null or a.title = :title) and (:priceMin is null or a.askingPrice >= :priceMin) and (:priceMax is null or a.askingPrice <= :priceMax)").setParameter("title", title).setParameter("priceMin", priceMin).setParameter("priceMax", priceMax);
+        }
         List resultList = q.getResultList();
         Auction[] matchingAuctions = new Auction[resultList.size()];
         for (int i = 0; i < resultList.size(); i++) {
-            matchingAuctions[i] = entityManager.find(Auction.class, (long) resultList.get(i));
+            matchingAuctions[i] = entityManager.find(Auction.class, resultList.get(i));
         }
         return matchingAuctions;
     }
