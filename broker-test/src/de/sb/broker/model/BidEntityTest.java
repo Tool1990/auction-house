@@ -30,8 +30,6 @@ public class BidEntityTest extends EntityTest {
 		Validator validator = this.getEntityValidatorFactory().getValidator();
 		Set<ConstraintViolation<Bid>> constraintViolations;
 		
-		//Error: During synchronization a new object was found through a relationship that was not marked cascade PERSIST: de.sb.broker.model.Person@796065aa.
-		
 		constraintViolations = validator.validate(testBid);
 		assertEquals(1, constraintViolations.size());
 		
@@ -54,43 +52,67 @@ public class BidEntityTest extends EntityTest {
 	@Test
 	public void testLifeCycle1(){
 		EntityManager entityManager = this.getEntityManagerFactory().createEntityManager();
-		try{	//Test-Case 1
+		try{	
+				// Initials
 				entityManager.getTransaction().begin();
 				populateTestPerson();
 				entityManager.persist(testBidder);
 				entityManager.getTransaction().commit();
 				this.getWasteBasket().add(testBidder.getIdentity());
-				assertNotNull(testBidder);		//test create
+				entityManager.clear();
+				assertNotNull(testBidder);	//test create
 				
 				entityManager.getTransaction().begin();
 				populateTestAuction();
 				entityManager.persist(testAuction);
 				entityManager.getTransaction().commit();
 				this.getWasteBasket().add(testAuction.getIdentity());
-				assertNotNull(testAuction);		//test create
+				entityManager.clear();
+				assertNotNull(testAuction);	//test create
 			
 				entityManager.getTransaction().begin();
 				populateTestBid();
 				entityManager.persist(testBid);
 				entityManager.getTransaction().commit();
 				this.getWasteBasket().add(testBid.getIdentity());
+				entityManager.clear();
+				assertNotNull(testBid);	//test create
 				
-				assertNotNull(testBid);		//test create
-				
+				//mapped by Test
 				entityManager.refresh(testBid);
-				assertEquals(testAuction.getIdentity(), testBid.getAuctionReference()); //mapped by
-				assertEquals(testBidder.getIdentity(), testBid.getBidderReference()); //mapped by
+				assertEquals(testAuction.getIdentity(), testBid.getAuctionReference());
+				assertEquals(testBidder.getIdentity(), testBid.getBidderReference()); 
 				
+				//Inequal Test
 				assertNotSame(testAuction.getSeller(), testBidder);
 				assertNotSame(testAuction.getAskingPrice(), testBid.getPrice());
 				
+				//Foreign Key Test
 				Bid bid1 = entityManager.find(Bid.class, testBid.getIdentity());
-				assertEquals(testBid.getIdentity(), bid1.getIdentity());	//test key	
+				assertEquals(testBid.getIdentity(), bid1.getIdentity());
+				
+	            // Update Test
+				entityManager.getTransaction().begin();
+	            testBid = entityManager.find(Bid.class, testBid.getIdentity());
+	            long oldPrice = testBid.getPrice();
+	            testBid.setPrice(567);
+	            this.getWasteBasket().add(testBid.getIdentity());
+	            entityManager.flush();
+	            long newPrice = entityManager.find(Bid.class, testBid.getIdentity()).getPrice();
+	            assertNotEquals(oldPrice, newPrice);
+	            entityManager.clear();
+	            
+	            // Delete Cascade Test
+	            long refAuction = entityManager.find(Bid.class, testBid.getIdentity()).getAuctionReference();
+	            long refPerson = entityManager.find(Bid.class, testBid.getIdentity()).getBidderReference();
+	            entityManager.remove(entityManager.find(Bid.class, testBid.getIdentity()));
+	            entityManager.flush();
+	            assertNotNull(entityManager.find(Auction.class, refAuction));
+	            assertNotNull(entityManager.find(Person.class, refPerson));
 				
 		}catch(Exception e){
 			if(entityManager.getTransaction().isActive())entityManager.getTransaction().rollback();
 		}finally{
-			//assertNull(testBid);		//test delete
 			entityManager.close();
 		}
 	}
