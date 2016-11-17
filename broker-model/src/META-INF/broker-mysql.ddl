@@ -7,7 +7,7 @@ USE broker;
 -- define tables, indices, etc.
 CREATE TABLE BaseEntity (
 	identity BIGINT NOT NULL AUTO_INCREMENT,
-	discriminator ENUM("Person", "Auction", "Bid") NOT NULL,
+	discriminator ENUM("Person", "Auction", "Bid", "Document") NOT NULL,
 	version INTEGER UNSIGNED NOT NULL DEFAULT 1,
 	creationTimestamp BIGINT NOT NULL,
 	KEY (discriminator),
@@ -16,6 +16,7 @@ CREATE TABLE BaseEntity (
 
 CREATE TABLE Person (
 	personIdentity BIGINT NOT NULL,
+	documentReference BIGINT NOT NULL,
 	alias CHAR(16) NOT NULL,
 	passwordHash BINARY(32) NOT NULL,
 	groupAlias ENUM("USER", "ADMIN") NOT NULL,
@@ -26,10 +27,11 @@ CREATE TABLE Person (
 	city VARCHAR(63) NOT NULL,
 	email VARCHAR(63) NOT NULL,
 	phone VARCHAR(63) NULL,
-	PRIMARY KEY (PersonIdentity),
+	PRIMARY KEY (personIdentity),
 	UNIQUE KEY (alias),
 	UNIQUE KEY (email),
-	FOREIGN KEY (personIdentity) REFERENCES BaseEntity (identity) ON DELETE CASCADE ON UPDATE CASCADE
+	FOREIGN KEY (personIdentity) REFERENCES BaseEntity (identity) ON DELETE CASCADE ON UPDATE CASCADE,
+	FOREIGN KEY (documentReference) REFERENCES Document (documentIdentity) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE Auction (
@@ -58,10 +60,21 @@ CREATE TABLE Bid (
 	FOREIGN KEY (auctionReference) REFERENCES Auction (auctionIdentity) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE Document (
+  PRIMARY KEY (documentIdentity),
+	documentIdentity BIGINT NOT NULL,
+	type VARCHAR(16) NOT NULL,
+	documentHash BINARY(32) NOT NULL,
+	content MEDIUMBLOB NOT NULL,
+	UNIQUE KEY (documentHash),
+	FOREIGN KEY (documentIdentity) REFERENCES BaseEntity (identity) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 -- define views
 CREATE ALGORITHM=MERGE VIEW JoinedEntity AS
 SELECT *
 FROM BaseEntity
 LEFT OUTER JOIN Person ON personIdentity = identity
 LEFT OUTER JOIN Auction ON auctionIdentity = identity
-LEFT OUTER JOIN Bid ON bidIdentity = identity;
+LEFT OUTER JOIN Bid ON bidIdentity = identity
+LEFT OUTER JOIN Document ON documentIdentity = identity;

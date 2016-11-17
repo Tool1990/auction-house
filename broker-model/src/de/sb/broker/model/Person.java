@@ -1,5 +1,7 @@
 package de.sb.broker.model;
 
+import com.sun.istack.internal.Nullable;
+
 import javax.persistence.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -51,6 +53,11 @@ public class Person extends BaseEntity {
 	@XmlElement
 	private Address address;
 
+
+	@ManyToOne(cascade = CascadeType.REMOVE)
+	@JoinColumn(name = "documentReference")
+	private Document document;
+
 	@OneToMany(mappedBy = "seller")
 	private Set<Auction> auctions;
 
@@ -84,6 +91,15 @@ public class Person extends BaseEntity {
 		this.address = new Address();
 		this.auctions = new HashSet<>();
 		this.bids = new HashSet<>();
+	}
+
+	public Document getAvatar() {
+		return document;
+	}
+
+	public void setAvatar(Document document) {
+		document.setPerson(this);
+		this.document = document;
 	}
 		
 	public byte[] getPasswordHash() {

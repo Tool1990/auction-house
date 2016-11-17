@@ -99,7 +99,7 @@ public class BidEntityTest extends EntityTest {
 	            this.getWasteBasket().add(testBid.getIdentity());
 	            entityManager.flush();
 	            long newPrice = entityManager.find(Bid.class, testBid.getIdentity()).getPrice();
-	            assertNotEquals(oldPrice, newPrice);
+	            assertNotSame(oldPrice, newPrice);
 	            entityManager.clear();
 	            
 	            // Delete Cascade Test

@@ -2,6 +2,7 @@ package de.sb.broker.rest;
 
 import de.sb.broker.model.Auction;
 import de.sb.broker.model.Bid;
+import de.sb.broker.model.Document;
 import de.sb.broker.model.Person;
 
 import javax.persistence.EntityManager;
@@ -70,6 +71,56 @@ public class PersonService {
         Auction[] matchingAuctions = new Auction[matchingAuctionsList.size()];
         matchingAuctions = matchingAuctionsList.toArray(matchingAuctions);
         return matchingAuctions;
+    }
+
+    @GET
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @Path("{identity}/avatar")
+    public Document getAvatar(@PathParam("identity") long personIdentity) {
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
+        Person person = entityManager.find(Person.class, personIdentity);
+        return person.getAvatar();
+    }
+
+    @PUT
+    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @Path("{identity}/avatar")
+    public void setAvatar(Document documentTemplate, @PathParam("identity") long personIdentity){
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
+        Person person = entityManager.find(Person.class, personIdentity);
+        if (person.getAvatar() == null) {
+            try {
+                entityManager.getTransaction().begin();
+                Document doc = entityManager.find(Document.class, documentTemplate.getIdentity());
+                if(doc==null){
+                    documentTemplate.setHash(Document.documentHash(documentTemplate.getContent()));
+                    entityManager.persist(documentTemplate);
+                    entityManager.getTransaction().commit();
+
+                    entityManager.getTransaction().begin();
+                    doc = entityManager.find(Document.class, documentTemplate.getIdentity());
+                    person.setAvatar(doc);
+                }else{
+                    person.setAvatar(doc);
+                }
+                entityManager.flush();
+
+            } catch (Exception e) {
+            } finally {
+                entityManager.close();
+            }
+        } else {
+            try {
+                entityManager.getTransaction().begin();
+                person.getAvatar().setContent(documentTemplate.getContent());
+                person.getAvatar().setHash(Document.documentHash(documentTemplate.getContent()));
+                person.getAvatar().setType(documentTemplate.getType());
+                entityManager.flush();
+            } catch (Exception e) {
+            } finally {
+                entityManager.close();
+            }
+        }
     }
 
     @GET
