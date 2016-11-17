@@ -7,9 +7,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class PersonEntityTest extends EntityTest {
 	Person testPerson = new Person();
@@ -66,49 +64,49 @@ public class PersonEntityTest extends EntityTest {
 		testAuction.setDescription("testDescription");
 
 		try {
+
+            //initial write test
 			entityManager.getTransaction().begin();
 			entityManager.persist(testPerson);
 			entityManager.getTransaction().commit();
 			this.getWasteBasket().add(testPerson.getIdentity());
+            long personIdentity = testPerson.getIdentity();
 			entityManager.clear();
 
 			entityManager.getTransaction().begin();
 			entityManager.persist(testAuction);
 			entityManager.getTransaction().commit();
 			this.getWasteBasket().add(testAuction.getIdentity());
-		} catch (Exception e) {
+            long auctionIdentity = testAuction.getIdentity();
+            entityManager.clear();
+
+            //Update Test
+            entityManager.getTransaction().begin();
+            testPerson = entityManager.find(Person.class,personIdentity);
+            String oldAlias = testPerson.getAlias();
+            testPerson.setAlias("new Alias");
+            this.getWasteBasket().add(testPerson.getIdentity());
+            entityManager.flush();
+            String newAlias = entityManager.find(Person.class, testPerson.getIdentity()).getAlias();
+            assertNotSame(oldAlias, newAlias);
+            entityManager.clear();
+
+            // Delete Cascade Test
+            long refAuction = entityManager.find(Auction.class, auctionIdentity).getSellerReference();
+            entityManager.remove(entityManager.find(Person.class, personIdentity));
+            assertNull(entityManager.find(Auction.class, refAuction));
+            entityManager.clear();
+        } catch (Exception e) {
 			entityManager.getTransaction().rollback();
 			throw e;
 		} finally {
-			entityManager.close();
+            if(entityManager.getTransaction().isActive()){
+                entityManager.getTransaction().rollback();
+            }
+            this.emptyWasteBasket();
+            entityManager.close();
 		}
 
-		entityManager.clear();
-		testAuction = entityManager.find(Auction.class, testAuction.getIdentity());
-		assertNotNull(testAuction);
-
-
-
-		entityManager = this.getEntityManagerFactory().createEntityManager();
-		boolean exceptionMode = false;
-
-		//update, clear, find, löschen, find
-
-		try {
-			entityManager.getTransaction().begin();
-			entityManager.persist(testAuction);
-			entityManager.getTransaction().commit();
-
-			entityManager.refresh(testPerson);
-			assertEquals(1, testPerson.getAuctions().size());
-		} catch (Exception e) {
-			exceptionMode = true;
-			entityManager.getTransaction().rollback();
-		} finally {
-			entityManager.close();
-		}
-
-		assertTrue(exceptionMode);
 	}
 
 	private Person populateTestPerson() {

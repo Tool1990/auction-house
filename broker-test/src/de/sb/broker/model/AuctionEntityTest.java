@@ -129,7 +129,7 @@ public class AuctionEntityTest extends EntityTest {
             em.remove(em.find(Auction.class, auctionIdentity));
             em.flush();
             assertNull(em.find(Person.class, refPerson));
-
+            em.clear();
 
 
         }
