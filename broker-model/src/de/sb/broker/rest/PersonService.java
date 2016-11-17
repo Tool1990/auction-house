@@ -20,18 +20,21 @@ public class PersonService {
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the people matching the given criteria, with null or missing parameters identifying omitted criteria.
-    public Person[] getPeople(@QueryParam("alias") String alias, @QueryParam("familyName") String familyName, @QueryParam("givenName") String givenName) {
+    public Person[] getPeople(@QueryParam("alias") String alias, @QueryParam("familyName") String familyName, @QueryParam("givenName") String givenName, @QueryParam("group") Person.Group group, @QueryParam("city") String city) {
 
         //TODO: weitere QueryParams einf�gen
 
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-       Query q =null;
-        if (familyName == null  && alias == null){
-            q = entityManager.createQuery("select p.identity from Person as p");
-        }else {
 
-            q = entityManager.createQuery("select p.identity from Person as p where  p.alias = :alias and :familyName is null or p.name.family = :familyName").setParameter("alias", alias).setParameter("familyName", familyName);
-        }
+
+        Query q = entityManager.createQuery("select p.identity from Person as p where  " +
+                "(:alias is null or p.alias = :alias ) " +
+                "and (:familyName is null or p.name.family = :familyName) and " +
+                "(:givenName is null or p.name.given = :givenName and " +
+                "(:group is null or p.group = :group) and " +
+                "(:city is null or p.address.city = :city)" +
+                ")").setParameter("alias", alias).setParameter("familyName", familyName).setParameter("givenName", givenName).setParameter("group", group).setParameter("city", city);
+
         List resultList = q.getResultList();
 
         Person[] matchingPeople = new Person[resultList.size()];
@@ -90,12 +93,11 @@ public class PersonService {
     }
 
 
-
     @PUT
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @Path("people")
     //Creates or modifies an auction from the given template data. Note that an auction may only be modified as long as it is not sealed (i.e. is open and still without bids).
-    public long setPerson(Person personTemplate,@HeaderParam("set-password") String newPassword) {
+    public long setPerson(Person personTemplate, @HeaderParam("set-password") String newPassword) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         Person person = entityManager.find(Person.class, personTemplate.getIdentity());
         long identity = 0;
@@ -119,7 +121,7 @@ public class PersonService {
                 person.getAddress().setStreet(personTemplate.getAddress().getStreet());
                 person.getName().setFamily(personTemplate.getName().getFamily());
                 person.getName().setGiven(personTemplate.getName().getGiven());
-                if(newPassword!= "" && newPassword != null) {
+                if (newPassword != "" && newPassword != null) {
                     person.setPasswordHash(personTemplate.getPasswordHash());
                 }
                 identity = person.getIdentity();
