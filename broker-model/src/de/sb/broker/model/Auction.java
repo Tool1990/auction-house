@@ -18,30 +18,28 @@ import java.util.Set;
 @Inequal(leftAccessPath = "closureTimestamp", rightAccessPath = "creationTimestamp", operator = Inequal.Operator.GREATER)
 public class Auction extends BaseEntity {
 
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = true, insertable = true)
 	@NotNull
 	@Size(min=1, max=255)
 	@XmlElement
 	private String title;
 
-	@Column(nullable = false)
+	@Column(nullable = false ,updatable = true, insertable = true)
 	@Min(1)
 	@XmlElement
 	private short unitCount;
 
-	@NotNull
-	@Column(nullable = false)
+
+	@Column(nullable = false, updatable = true, insertable = true)
 	@Min(1)
 	@XmlElement
 	private long askingPrice;
 
-	@NotNull
-	@Valid
-	@Column(nullable = false)
+	@Column(nullable = false,updatable = true, insertable = true)
 	@XmlElement
 	private long closureTimestamp;
 
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = true, insertable = true)
 	@NotNull
 	@Size(min=1, max=8189)
 	@XmlElement
@@ -49,7 +47,6 @@ public class Auction extends BaseEntity {
 
 	@ManyToOne(cascade = CascadeType.REMOVE)
 	@JoinColumn(name = "sellerReference")
-	@NotNull
 	private Person seller;
 
 	@OneToMany(mappedBy = "auction")

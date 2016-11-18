@@ -5,43 +5,58 @@ import de.sb.broker.model.Bid;
 import de.sb.broker.model.Document;
 import de.sb.broker.model.Person;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.Query;
+import javax.persistence.*;
+import javax.print.Doc;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Path("people")
 public class PersonService {
     static private final EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("broker");
+    static private final String SQL = "select p.identity from Person as p where  " +
+            "(:alias is null or p.alias = :alias ) " +
+            "and (:familyName is null or p.name.family = :familyName) and " +
+            "(:givenName is null or p.name.given = :givenName and " +
+            "(:group is null or p.group = :group) and " +
+            "(:city is null or p.address.city = :city)" +
+            ")";
+    private static final String SQLAVATAR = "select d.identity from Document as d where d.hash = :docHash";
 
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the people matching the given criteria, with null or missing parameters identifying omitted criteria.
     public Person[] getPeople(@QueryParam("alias") String alias, @QueryParam("familyName") String familyName, @QueryParam("givenName") String givenName, @QueryParam("group") Person.Group group, @QueryParam("city") String city) {
 
-        //TODO: weitere QueryParams einf�gen
-
         EntityManager entityManager = entityManagerFactory.createEntityManager();
+        Person[] matchingPeople = null;
 
+        try {
 
-        Query q = entityManager.createQuery("select p.identity from Person as p where  " +
-                "(:alias is null or p.alias = :alias ) " +
-                "and (:familyName is null or p.name.family = :familyName) and " +
-                "(:givenName is null or p.name.given = :givenName and " +
-                "(:group is null or p.group = :group) and " +
-                "(:city is null or p.address.city = :city)" +
-                ")").setParameter("alias", alias).setParameter("familyName", familyName).setParameter("givenName", givenName).setParameter("group", group).setParameter("city", city);
-
-        List resultList = q.getResultList();
-
-        Person[] matchingPeople = new Person[resultList.size()];
-        for (int i = 0; i < resultList.size(); i++) {
-            matchingPeople[i] = entityManager.find(Person.class, resultList.get(i));
+            TypedQuery<Long> q = entityManager.createQuery(SQL, Long.class);
+            q.setParameter("familyName", familyName);
+            q.setParameter("givenName", givenName);
+            q.setParameter("alias", alias);
+            q.setParameter("group", group);
+            q.setParameter("city", city);
+            List<Long> resultList = q.getResultList();
+            matchingPeople = new Person[resultList.size()];
+            for (int i = 0; i < resultList.size(); i++) {
+                matchingPeople[i] = entityManager.find(Person.class, resultList.get(i));
+            }
+        } catch (Exception e) {
+        } finally {
+            entityManager.close();
         }
+
+
+
+
+
+
         return matchingPeople;
     }
 
@@ -50,7 +65,16 @@ public class PersonService {
     @Path("{identity}")
     //Returns  the person matching the given identity.
     public Person getPerson(@PathParam("identity") long personIdentity) {
-        return entityManagerFactory.createEntityManager().find(Person.class, personIdentity);
+        Person person = null;
+        EntityManager em = entityManagerFactory.createEntityManager();
+        try {
+           person = em.find(Person.class, personIdentity);
+        } catch (Exception e) {
+        } finally {
+         em.close();
+        }
+        System.out.println(person);
+        return person;
     }
 
     @GET
@@ -59,68 +83,84 @@ public class PersonService {
     //Returns all auctions associated with the person matching the given identity (as seller or bidder).
     public Auction[] getAuctions(@PathParam("identity") long personIdentity) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Person person = entityManager.find(Person.class, personIdentity);
-        List resultList = entityManager.createQuery("select a.identity from Auction as a").getResultList();
-        List<Auction> matchingAuctionsList = new ArrayList<>();
-        for (Object auctionID : resultList) {
-            Auction auction = entityManager.find(Auction.class, auctionID);
-            if (auction.getSellerReference() == (personIdentity) || auction.getBid(person) != null) {
-                matchingAuctionsList.add(auction);
+        List<Auction> resultList = null;
+        try {
+            Person person = entityManager.find(Person.class, personIdentity);
+            resultList = new ArrayList(person.getAuctions());
+
+            List<Bid> bidsList = new ArrayList(person.getBids());
+
+            for (Bid bid: bidsList) {
+                if (bid.getBidderReference() == personIdentity){
+                    resultList.add(bid.getAuction());
+                }
             }
+        } catch (Exception e) {
+        } finally {
+            entityManager.close();
         }
-        Auction[] matchingAuctions = new Auction[matchingAuctionsList.size()];
-        matchingAuctions = matchingAuctionsList.toArray(matchingAuctions);
-        return matchingAuctions;
+        Auction[] results = new Auction[resultList.size()];
+
+        return resultList.toArray(results);
     }
 
     @GET
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @Produces({MediaType.WILDCARD})
     @Path("{identity}/avatar")
-    public Document getAvatar(@PathParam("identity") long personIdentity) {
+    public Response getAvatar(@PathParam("identity") long personIdentity) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Person person = entityManager.find(Person.class, personIdentity);
-        return person.getAvatar();
+        Response res = null;
+        try {
+            Person person = entityManager.find(Person.class, personIdentity);
+            Document avatar = person.getAvatar();
+
+            //respone with no content if avatar null else response with avatar content
+            res  = avatar == null ? Response.noContent().build():Response.ok().entity(avatar.getContent()).header("mimetype", avatar.getType()).build();
+        } catch (Exception e) {
+        } finally {
+            entityManager.close();
+        }
+
+
+        // TODO: 18/11/2016 Response.ok().entity(content).setHeader(minetype feld)
+        return res;
     }
 
     @PUT
-    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @Consumes({MediaType.WILDCARD})
     @Path("{identity}/avatar")
-    public void setAvatar(Document documentTemplate, @PathParam("identity") long personIdentity){
+    public void setAvatar(byte[] documentContent, @HeaderParam("Accept") String contentType, @PathParam("identity") long personIdentity) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Person person = entityManager.find(Person.class, personIdentity);
-        if (person.getAvatar() == null) {
-            try {
-                entityManager.getTransaction().begin();
-                Document doc = entityManager.find(Document.class, documentTemplate.getIdentity());
-                if(doc==null){
-                    documentTemplate.setHash(Document.documentHash(documentTemplate.getContent()));
-                    entityManager.persist(documentTemplate);
+        Document doc =null;
+
+        try {
+                Person person = entityManager.find(Person.class, personIdentity);
+
+                byte[] docHash = Document.documentHash(documentContent);
+                TypedQuery query = entityManager.createQuery(SQLAVATAR, Document.class);
+                query.setParameter("docHash", docHash);
+                List<Long> result = query.getResultList();
+                if (result.size() != 0) {
+                    doc = entityManager.find(Document.class,result.get(0));
+                    person.setAvatar(doc);
+
+                } else {
+                    doc = new Document(contentType,documentContent);
+                    entityManager.getTransaction().begin();
+                    entityManager.persist(doc);
                     entityManager.getTransaction().commit();
 
                     entityManager.getTransaction().begin();
-                    doc = entityManager.find(Document.class, documentTemplate.getIdentity());
-                    person.setAvatar(doc);
-                }else{
                     person.setAvatar(doc);
                 }
                 entityManager.flush();
 
             } catch (Exception e) {
             } finally {
+                 Cache cache = entityManager.getEntityManagerFactory().getCache();
+                cache.evict(doc.getClass(), doc.getIdentity());
                 entityManager.close();
             }
-        } else {
-            try {
-                entityManager.getTransaction().begin();
-                person.getAvatar().setContent(documentTemplate.getContent());
-                person.getAvatar().setHash(Document.documentHash(documentTemplate.getContent()));
-                person.getAvatar().setType(documentTemplate.getType());
-                entityManager.flush();
-            } catch (Exception e) {
-            } finally {
-                entityManager.close();
-            }
-        }
     }
 
     @GET
@@ -129,17 +169,24 @@ public class PersonService {
     //Returns all bids for closed auctions associated with the bidder matching the given identity.
     public Bid[] getBids(@PathParam("identity") long personIdentity) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Person person = entityManager.find(Person.class, personIdentity);
-        List resultList = entityManager.createQuery("select a.identity from Auction as a").getResultList();
-        List<Bid> matchingBidsList = new ArrayList<>();
-        for (Object auctionID : resultList) {
-            Auction auction = entityManager.find(Auction.class, auctionID);
-            if (auction.isClosed() && auction.getBid(person) != null) {
-                matchingBidsList.add(auction.getBid(person));
+        Bid[] matchingBids = null;
+        try {
+
+            Person person = entityManager.find(Person.class, personIdentity);
+            Collection<Bid> resultList = person.getBids();
+            List<Bid> matchingBidsList = new ArrayList<>();
+
+            for (Bid bid : resultList) {
+                Auction auction = bid.getAuction();
+                if (auction.isClosed()) {
+                    matchingBidsList.add(bid);
+                }
             }
+            matchingBids = matchingBidsList.toArray(new Bid[matchingBidsList.size()]);
+        } catch (Exception e) {
+        } finally {
+            entityManager.close();
         }
-        Bid[] matchingBids = new Bid[matchingBidsList.size()];
-        matchingBids = matchingBidsList.toArray(matchingBids);
         return matchingBids;
     }
 

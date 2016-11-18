@@ -1,6 +1,7 @@
 package de.sb.broker.model;
 
 import com.sun.istack.internal.Nullable;
+import org.eclipse.persistence.annotations.VirtualAccessMethods;
 
 import javax.persistence.*;
 import javax.validation.Valid;
@@ -33,6 +34,7 @@ public class Person extends BaseEntity {
 	@Column(name = "GroupAlias", nullable = false)
 	@NotNull
 	@XmlElement
+	@Valid
 	private Group group;
 
 	@Embedded

@@ -15,19 +15,17 @@ import javax.xml.bind.annotation.XmlElement;
 @Inequal(leftAccessPath = "price", rightAccessPath = {"auction", "askingPrice"}, operator = Inequal.Operator.GREATER)
 public class Bid extends BaseEntity {
 
-	@Min(0)
+	@Min(1)
 	@Column(nullable = false)
 	@XmlElement
 	private long price;
 
 	@ManyToOne(cascade = CascadeType.REMOVE)
 	@JoinColumn(name = "auctionReference")
-	@NotNull
 	private Auction auction;
 
 	@ManyToOne(cascade = CascadeType.REMOVE)
 	@JoinColumn(name = "bidderReference")
-	@NotNull
 	private Person bidder;
 
 	public Bid(Auction auction, Person bidder) {

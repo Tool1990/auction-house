@@ -2,14 +2,13 @@ package de.sb.broker.model;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 
-/**
- * Created by koschall on 17/11/2016.
- */
+
 @Entity
 @Table(name="Document", schema = "broker")
 @DiscriminatorValue(value = "Document")
@@ -19,6 +18,7 @@ public class Document extends BaseEntity {
     @Column(name ="type", nullable = false)
     @NotNull
     @XmlElement
+    @Size(min = 1, max=16)
     private String type;
 
     @Column(name ="content", nullable = false)
@@ -50,6 +50,7 @@ public class Document extends BaseEntity {
         super();
         this.type = type;
         this.content = content;
+        this.hash  = Document.documentHash(content);
     }
 
     public byte[] getContent() {

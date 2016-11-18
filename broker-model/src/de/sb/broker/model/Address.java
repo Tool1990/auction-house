@@ -3,22 +3,26 @@ package de.sb.broker.model;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
 
 @Embeddable
 public class Address {
 
-	@Column(nullable = true)
+	@Column(nullable = true, updatable = true, insertable = true)
 	@XmlElement
+	@Size(min =1, max=63)
 	private String street;
 
-	@Column(nullable = true)
+	@Column(nullable = true, updatable = true, insertable = true)
 	@XmlElement
+	@Size(min =1, max=15)
 	private String postCode;
 
-	@Column(nullable = false)
+	@Column(nullable = true, updatable = true, insertable = true)
 	@NotNull
 	@XmlElement
+	@Size(min =1, max=63)
 	private String city;
 	
 	public String getStreet() {

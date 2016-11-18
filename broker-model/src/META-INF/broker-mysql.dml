@@ -5,11 +5,11 @@ DELETE FROM BaseEntity;
 
 INSERT INTO BaseEntity VALUES (0, "Person", 1, UNIX_TIMESTAMP()*1000);
 SET @ei1 = LAST_INSERT_ID();
-INSERT INTO Person VALUES (@ei1, "ines", UNHEX(SHA2("ines",256)), "ADMIN", "Ines", "Bergmann", "Wiener Strasse 42", "10999", "Berlin", "ines.bergmann@web.de", "0172/2345678");
+INSERT INTO Person VALUES (@ei1,null, "ines", UNHEX(SHA2("ines",256)), "ADMIN", "Ines", "Bergmann", "Wiener Strasse 42", "10999", "Berlin", "ines.bergmann@web.de", "0172/2345678");
 
 INSERT INTO BaseEntity VALUES (0, "Person", 1, UNIX_TIMESTAMP()*1000);
 SET @ei2 = LAST_INSERT_ID();
-INSERT INTO Person VALUES (@ei2, "sascha", UNHEX(SHA2("sascha",256)), "ADMIN", "Sascha", "Baumeister", "Ohlauer Strasse 29", "10999", "Berlin", "sascha.baumeister@gmail.com", "0174/3345975");
+INSERT INTO Person VALUES (@ei2,null, "sascha", UNHEX(SHA2("sascha",256)), "ADMIN", "Sascha", "Baumeister", "Ohlauer Strasse 29", "10999", "Berlin", "sascha.baumeister@gmail.com", "0174/3345975");
 
 INSERT INTO BaseEntity VALUES (0, "Auction", 1, UNIX_TIMESTAMP()*1000);
 SET @ei3 = LAST_INSERT_ID();
@@ -17,7 +17,7 @@ INSERT INTO Auction VALUES (@ei3, @ei1, "Rennrad wie neu", 1, 8000, (UNIX_TIMEST
 
 INSERT INTO BaseEntity VALUES (0, "Auction", 1, UNIX_TIMESTAMP()*1000);
 SET @ei4 = LAST_INSERT_ID();
-INSERT INTO Auction VALUES (@ei4, @ei1, "Stereoanlage neuwertig", 1, 5000, (UNIX_TIMESTAMP()+30*24*60*60)*1000, "Verkaufe meine Stereoanlage: Plattenspieler, Amp, Radio alles von Kenwood");
+INSERT INTO Auction VALUES (@ei4,@ei1, "Stereoanlage neuwertig", 1, 5000, (UNIX_TIMESTAMP()+30*24*60*60)*1000, "Verkaufe meine Stereoanlage: Plattenspieler, Amp, Radio alles von Kenwood");
 
 INSERT INTO BaseEntity VALUES (0, "Auction", 1, UNIX_TIMESTAMP()*1000);
 SET @ei5 = LAST_INSERT_ID();
