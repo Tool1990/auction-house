@@ -2,10 +2,7 @@ package de.sb.broker.rest;
 
 import de.sb.broker.model.Auction;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.Query;
+import javax.persistence.*;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
@@ -14,25 +11,30 @@ import java.util.List;
 public class AuctionService {
 
     static private final EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("broker");
+    private EntityManager entityManager;
 
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the auctions matching the given criteria, with null or missing parameters identifying omitted criteria.
     public Auction[] getAuctions(@QueryParam("title") String title, @QueryParam("priceMin") long priceMin, @QueryParam("priceMax") long priceMax) {
+        entityManager = entityManagerFactory.createEntityManager();
+        Query q;
+        Auction[] matchingAuctions = null;
+        try {
+            if (priceMax == 0) {
+                q = entityManager.createQuery("select a.identity from Auction as a where (:title is null or a.title = :title) and (:priceMin is null or a.askingPrice >= :priceMin)").setParameter("title", title).setParameter("priceMin", priceMin);
 
-
-        EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Query q = null;
-        if (priceMax == 0) {
-            q = entityManager.createQuery("select a.identity from Auction as a where (:title is null or a.title = :title) and (:priceMin is null or a.askingPrice >= :priceMin)").setParameter("title", title).setParameter("priceMin", priceMin);
-
-        } else {
-            q = entityManager.createQuery("select a.identity from Auction as a where (:title is null or a.title = :title) and (:priceMin is null or a.askingPrice >= :priceMin) and (:priceMax is null or a.askingPrice <= :priceMax)").setParameter("title", title).setParameter("priceMin", priceMin).setParameter("priceMax", priceMax);
-        }
-        List resultList = q.getResultList();
-        Auction[] matchingAuctions = new Auction[resultList.size()];
-        for (int i = 0; i < resultList.size(); i++) {
-            matchingAuctions[i] = entityManager.find(Auction.class, resultList.get(i));
+            } else {
+                q = entityManager.createQuery("select a.identity from Auction as a where (:title is null or a.title = :title) and (:priceMin is null or a.askingPrice >= :priceMin) and (:priceMax is null or a.askingPrice <= :priceMax)").setParameter("title", title).setParameter("priceMin", priceMin).setParameter("priceMax", priceMax);
+            }
+            List resultList = q.getResultList();
+            matchingAuctions = new Auction[resultList.size()];
+            for (int i = 0; i < resultList.size(); i++) {
+                matchingAuctions[i] = entityManager.find(Auction.class, resultList.get(i));
+            }
+        } catch (Exception e) {
+        } finally {
+            entityManager.close();
         }
         return matchingAuctions;
     }
@@ -42,7 +44,14 @@ public class AuctionService {
     @Path("{identity}")
     //Returns the auction matching the given identity
     public Auction getAuction(@PathParam("identity") long auctionIdentity) {
-        return entityManagerFactory.createEntityManager().find(Auction.class, auctionIdentity);
+        Auction auction = null;
+        try {
+            auction = entityManagerFactory.createEntityManager().find(Auction.class, auctionIdentity);
+        } catch (Exception e) {
+        } finally {
+            entityManager.close();
+        }
+        return auction;
     }
 
     @PUT
@@ -72,6 +81,8 @@ public class AuctionService {
                 entityManager.flush();
             } catch (Exception e) {
             } finally {
+                Cache cache = entityManager.getEntityManagerFactory().getCache();
+                cache.evict(auctionTemplate.getSeller().getClass(), auctionTemplate.getSeller().getIdentity());
                 entityManager.close();
             }
         }
