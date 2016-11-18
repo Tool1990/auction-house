@@ -53,10 +53,6 @@ public class PersonService {
         }
 
 
-
-
-
-
         return matchingPeople;
     }
 
@@ -68,10 +64,10 @@ public class PersonService {
         Person person = null;
         EntityManager em = entityManagerFactory.createEntityManager();
         try {
-           person = em.find(Person.class, personIdentity);
+            person = em.find(Person.class, personIdentity);
         } catch (Exception e) {
         } finally {
-         em.close();
+            em.close();
         }
         System.out.println(person);
         return person;
@@ -90,8 +86,8 @@ public class PersonService {
 
             List<Bid> bidsList = new ArrayList(person.getBids());
 
-            for (Bid bid: bidsList) {
-                if (bid.getBidderReference() == personIdentity){
+            for (Bid bid : bidsList) {
+                if (bid.getBidderReference() == personIdentity) {
                     resultList.add(bid.getAuction());
                 }
             }
@@ -115,7 +111,7 @@ public class PersonService {
             Document avatar = person.getAvatar();
 
             //respone with no content if avatar null else response with avatar content
-            res  = avatar == null ? Response.noContent().build():Response.ok().entity(avatar.getContent()).header("mimetype", avatar.getType()).build();
+            res = avatar == null ? Response.noContent().build() : Response.ok().entity(avatar.getContent()).header("mimetype", avatar.getType()).build();
         } catch (Exception e) {
         } finally {
             entityManager.close();
@@ -131,36 +127,36 @@ public class PersonService {
     @Path("{identity}/avatar")
     public void setAvatar(byte[] documentContent, @HeaderParam("Accept") String contentType, @PathParam("identity") long personIdentity) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Document doc =null;
+        Document doc = null;
 
         try {
-                Person person = entityManager.find(Person.class, personIdentity);
+            Person person = entityManager.find(Person.class, personIdentity);
 
-                byte[] docHash = Document.documentHash(documentContent);
-                TypedQuery query = entityManager.createQuery(SQLAVATAR, Document.class);
-                query.setParameter("docHash", docHash);
-                List<Long> result = query.getResultList();
-                if (result.size() != 0) {
-                    doc = entityManager.find(Document.class,result.get(0));
-                    person.setAvatar(doc);
+            byte[] docHash = Document.documentHash(documentContent);
+            TypedQuery query = entityManager.createQuery(SQLAVATAR, Document.class);
+            query.setParameter("docHash", docHash);
+            List<Long> result = query.getResultList();
+            if (result.size() != 0) {
+                doc = entityManager.find(Document.class, result.get(0));
+                person.setAvatar(doc);
 
-                } else {
-                    doc = new Document(contentType,documentContent);
-                    entityManager.getTransaction().begin();
-                    entityManager.persist(doc);
-                    entityManager.getTransaction().commit();
+            } else {
+                doc = new Document(contentType, documentContent);
+                entityManager.getTransaction().begin();
+                entityManager.persist(doc);
+                entityManager.getTransaction().commit();
 
-                    entityManager.getTransaction().begin();
-                    person.setAvatar(doc);
-                }
-                entityManager.flush();
-
-            } catch (Exception e) {
-            } finally {
-                 Cache cache = entityManager.getEntityManagerFactory().getCache();
-                cache.evict(doc.getClass(), doc.getIdentity());
-                entityManager.close();
+                entityManager.getTransaction().begin();
+                person.setAvatar(doc);
             }
+            entityManager.flush();
+
+        } catch (Exception e) {
+        } finally {
+            Cache cache = entityManager.getEntityManagerFactory().getCache();
+            cache.evict(doc.getClass(), doc.getIdentity());
+            entityManager.close();
+        }
     }
 
     @GET
