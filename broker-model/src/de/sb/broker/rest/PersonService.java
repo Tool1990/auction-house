@@ -69,7 +69,6 @@ public class PersonService {
         } finally {
             em.close();
         }
-        System.out.println(person);
         return person;
     }
 

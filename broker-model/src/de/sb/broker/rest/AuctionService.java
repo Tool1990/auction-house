@@ -45,11 +45,12 @@ public class AuctionService {
     //Returns the auction matching the given identity
     public Auction getAuction(@PathParam("identity") long auctionIdentity) {
         Auction auction = null;
+        EntityManager em = entityManagerFactory.createEntityManager();
         try {
-            auction = entityManagerFactory.createEntityManager().find(Auction.class, auctionIdentity);
+            auction = em.find(Auction.class, auctionIdentity);
         } catch (Exception e) {
         } finally {
-            entityManager.close();
+            em.close();
         }
         return auction;
     }
