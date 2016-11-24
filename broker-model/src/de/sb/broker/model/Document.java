@@ -69,16 +69,16 @@ public class Document extends BaseEntity {
     }
 
     static public byte[] documentHash(byte[] content){
-        MessageDigest messageDigest = null;
-
+        byte[] bytes = null;
         try {
-            messageDigest = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            System.out.println("NoSuchAlgorithmException: " + e.getStackTrace());
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            bytes = md.digest(content);
         }
-
-        messageDigest.update(content);
-        return messageDigest.digest();
+        catch (NoSuchAlgorithmException e)
+        {
+            e.printStackTrace();
+        }
+        return bytes;
     }
 
     public String getType() {

@@ -7,10 +7,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.PersistenceException;
+import javax.persistence.*;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.WebApplicationException;
@@ -120,8 +117,21 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 		// password, creating a query using the constant below, and returning the person if it matches the password hash.
 		// If there is none, or if it fails the password hash check, then throw NotAuthorizedException("Basic"). Note
 		// that this exception type is a specialized Subclass of ClientErrorException that is capable of storing a
-		// challenge, in this case for Basic Authorization. 
-		throw new AssertionError(PERSON_BY_ALIAS);
+		// challenge, in this case for Basic Authorization.
+
+
+		TypedQuery<Person> q = brokerManager().createQuery(PERSON_BY_ALIAS, Person.class);
+		Person person = q.setParameter("alias", username).getResultList().get(0);
+		if (person == null ){
+			throw new NotAuthorizedException("Basic");
+		}else {
+				System.out.println(person.getPasswordHash() + "        " + Person.passwordHash(password));
+			if (person.getPasswordHash().equals(Person.passwordHash(password))) {
+				return person;
+			}else {
+				throw new NotAuthorizedException("Basic");
+			}
+		}
 	}
 
 

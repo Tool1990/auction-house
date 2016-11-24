@@ -206,9 +206,9 @@ public class PersonService {
         long identity = 0;
         if (person == null) {
             try {
-                getEM().getTransaction().begin();
                 getEM().persist(personTemplate);
                 getEM().getTransaction().commit();
+                getEM().getTransaction().begin();
                 identity = personTemplate.getIdentity();
             } catch (Exception e) {
             } finally {
@@ -217,7 +217,6 @@ public class PersonService {
             }
         } else {
             try {
-                getEM().getTransaction().begin();
                 person.setAlias(personTemplate.getAlias());
                 person.setGroup(personTemplate.getGroup());
                 person.getAddress().setCity(personTemplate.getAddress().getCity());

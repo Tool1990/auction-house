@@ -1,10 +1,15 @@
 package de.sb.broker.rest;
 
 import de.sb.broker.model.Auction;
+import de.sb.broker.model.Person;
+import de.sb.java.net.HttpAuthenticationCodec;
+import org.glassfish.jersey.server.ParamException;
 
 import javax.persistence.*;
 import javax.ws.rs.*;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import java.util.IllegalFormatException;
 import java.util.List;
 
 @Path("auctions")
@@ -14,13 +19,17 @@ public class AuctionService {
         return LifeCycleProvider.brokerManager();
     }
 
+    public Person authenticate(String authHeaderString){
+        return LifeCycleProvider.authenticate(authHeaderString);
+    }
+
 
 
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the auctions matching the given criteria, with null or missing parameters identifying omitted criteria.
-    public Auction[] getAuctions(@QueryParam("title") String title, @QueryParam("priceMin") long priceMin, @QueryParam("priceMax") long priceMax) {
-
+    public Auction[] getAuctions(@QueryParam("title") String title, @QueryParam("priceMin") long priceMin, @QueryParam("priceMax") long priceMax, @HeaderParam("Authorization") String authString) {
+        Person person = authenticate(authString);
         Query q;
         Auction[] matchingAuctions = null;
         try {
@@ -51,7 +60,9 @@ public class AuctionService {
         Auction auction = null;
         try {
             auction = getEM().find(Auction.class, auctionIdentity);
-        } catch (Exception e) {
+
+        }catch(Throwable e){
+               throw new WebApplicationException(e);
         } finally {
             if (!getEM().getTransaction().isActive())
                 getEM().getTransaction().begin();
