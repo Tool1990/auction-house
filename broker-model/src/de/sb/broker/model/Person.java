@@ -56,7 +56,7 @@ public class Person extends BaseEntity {
 	private Address address;
 
 
-	@ManyToOne(cascade = CascadeType.REMOVE)
+	@ManyToOne(cascade = CascadeType.DETACH)
 	@JoinColumn(name = "documentReference")
 	private Document document;
 
@@ -100,7 +100,6 @@ public class Person extends BaseEntity {
 	}
 
 	public void setAvatar(Document document) {
-		document.setPerson(this);
 		this.document = document;
 	}
 		
@@ -146,5 +145,9 @@ public class Person extends BaseEntity {
 
 	public Set<Bid> getBids() {
 		return bids;
+	}
+
+	public long getDocumentReference() {
+		return getAvatar() == null ? null : getAvatar().getIdentity();
 	}
 }

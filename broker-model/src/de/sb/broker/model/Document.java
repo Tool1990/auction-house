@@ -34,7 +34,7 @@ public class Document extends BaseEntity {
     @OneToMany(mappedBy = "document")
     private Set<Person> persons;
 
-    public Document() {
+    protected Document() {
         super();
     }
 
@@ -42,9 +42,6 @@ public class Document extends BaseEntity {
         return persons;
     }
 
-    public void setPerson(Person person) {
-        this.persons.add(person);
-    }
 
     public Document(String type, byte[] content) {
         super();
