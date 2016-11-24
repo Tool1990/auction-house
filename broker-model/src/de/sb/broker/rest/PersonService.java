@@ -110,6 +110,7 @@ public class PersonService {
             Person person = entityManager.find(Person.class, personIdentity);
             Document avatar = person.getAvatar();
 
+
             //respone with no content if avatar null else response with avatar content
             res = avatar == null ? Response.noContent().build() : Response.ok().entity(avatar.getContent()).header("mimetype", avatar.getType()).build();
         } catch (Exception e) {
@@ -117,8 +118,6 @@ public class PersonService {
             entityManager.close();
         }
 
-
-        // TODO: 18/11/2016 Response.ok().entity(content).setHeader(minetype feld)
         return res;
     }
 
@@ -137,9 +136,9 @@ public class PersonService {
             query.setParameter("docHash", docHash);
             List<Long> result = query.getResultList();
             if (result.size() != 0) {
+                entityManager.getTransaction().begin();
                 doc = entityManager.find(Document.class, result.get(0));
                 person.setAvatar(doc);
-
             } else {
                 doc = new Document(contentType, documentContent);
                 entityManager.getTransaction().begin();
@@ -149,10 +148,15 @@ public class PersonService {
                 entityManager.getTransaction().begin();
                 person.setAvatar(doc);
             }
-            entityManager.flush();
+            entityManager.merge(person);
+            entityManager.getTransaction().commit();
+
 
         } catch (Exception e) {
         } finally {
+            if (entityManager.getTransaction().isActive()){
+                entityManager.getTransaction().rollback();
+            }
             Cache cache = entityManager.getEntityManagerFactory().getCache();
             cache.evict(doc.getClass(), doc.getIdentity());
             entityManager.close();
@@ -188,8 +192,7 @@ public class PersonService {
 
 
     @PUT
-    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    @Path("people")
+    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.WILDCARD})
     //Creates or modifies an auction from the given template data. Note that an auction may only be modified as long as it is not sealed (i.e. is open and still without bids).
     public long setPerson(Person personTemplate, @HeaderParam("set-password") String newPassword) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
@@ -200,7 +203,7 @@ public class PersonService {
                 entityManager.getTransaction().begin();
                 entityManager.persist(personTemplate);
                 entityManager.getTransaction().commit();
-                identity = person.getIdentity();
+                identity = personTemplate.getIdentity();
             } catch (Exception e) {
             } finally {
                 entityManager.close();
@@ -216,7 +219,7 @@ public class PersonService {
                 person.getName().setFamily(personTemplate.getName().getFamily());
                 person.getName().setGiven(personTemplate.getName().getGiven());
                 if (newPassword != "" && newPassword != null) {
-                    person.setPasswordHash(personTemplate.getPasswordHash());
+                    person.setPasswordHash(Person.passwordHash(newPassword));
                 }
                 identity = person.getIdentity();
                 entityManager.flush();

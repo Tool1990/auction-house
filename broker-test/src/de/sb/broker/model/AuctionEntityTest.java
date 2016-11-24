@@ -112,6 +112,14 @@ public class AuctionEntityTest extends EntityTest {
             long auctionIdentity = auction.getIdentity();
             em.clear();
 
+            em.getTransaction().begin();
+            auction = em.find(Auction.class,auction.getIdentity());
+            testPerson = em.find(Person.class,auction.getSellerReference());
+
+            System.out.println("######################" + auction.getSellerReference() + "     "+  testPerson.getIdentity());
+            em.getTransaction().rollback();
+            em.clear();
+
 
             // Update Test
             em.getTransaction().begin();
@@ -126,6 +134,7 @@ public class AuctionEntityTest extends EntityTest {
 
             // Delete Cascade Test
             long refPerson = em.find(Auction.class, auctionIdentity).getSellerReference();
+            System.out.println(refPerson);
             em.remove(em.find(Auction.class, auctionIdentity));
             em.flush();
             assertNull(em.find(Person.class, refPerson));

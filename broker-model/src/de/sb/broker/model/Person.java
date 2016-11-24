@@ -101,6 +101,7 @@ public class Person extends BaseEntity {
 
 	public void setAvatar(Document document) {
 		this.document = document;
+		document.getPersons().add(this);
 	}
 		
 	public byte[] getPasswordHash() {
@@ -148,6 +149,6 @@ public class Person extends BaseEntity {
 	}
 
 	public long getDocumentReference() {
-		return getAvatar() == null ? null : getAvatar().getIdentity();
+		return getAvatar() == null ? 0 : getAvatar().getIdentity();
 	}
 }

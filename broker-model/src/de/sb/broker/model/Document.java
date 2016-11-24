@@ -6,6 +6,7 @@ import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
 import java.util.Set;
 
 
@@ -48,6 +49,7 @@ public class Document extends BaseEntity {
         this.type = type;
         this.content = content;
         this.hash  = Document.documentHash(content);
+        persons = new HashSet<Person>();
     }
 
     public byte[] getContent() {

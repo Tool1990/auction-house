@@ -56,7 +56,6 @@ public class AuctionService {
 
     @PUT
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    @Path("auctions")
     //Creates or modifies an auction from the given template data. Note that an auction may only be modified as long as it is not sealed (i.e. is open and still without bids).
     public void setAuction(Auction auctionTemplate) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();

@@ -110,16 +110,26 @@ public class PersonEntityTest extends EntityTest {
 
             entityManager.getTransaction().begin();
             entityManager.persist(testDoc);
+			entityManager.merge(testPerson);
             entityManager.getTransaction().commit();
             this.getWasteBasket().add(testDoc.getIdentity());
             entityManager.clear();
 
             entityManager.getTransaction().begin();
             testPerson.setAvatar(testDoc);
-            entityManager.flush();
+			entityManager.merge(testPerson);
+			entityManager.getTransaction().commit();
+			System.out.println("######################" + testPerson.getDocumentReference() + "     "+  testDoc.getIdentity());
             assertEquals(testPerson.getDocumentReference(), testDoc.getIdentity());
-            entityManager.getTransaction().rollback();
             entityManager.clear();
+
+			entityManager.getTransaction().begin();
+			testPerson = entityManager.find(Person.class,personIdentity);
+
+			testDoc = entityManager.find(Document.class,testPerson.getDocumentReference());
+			System.out.println("######################" + testPerson.getDocumentReference() + "     " + testDoc.getIdentity());
+			entityManager.getTransaction().rollback();
+			entityManager.clear();
 
             //Update Test
             entityManager.getTransaction().begin();
@@ -138,6 +148,7 @@ public class PersonEntityTest extends EntityTest {
             assertNull(entityManager.find(Auction.class, refAuction));
             entityManager.clear();
         } catch (Exception e) {
+			if (entityManager.getTransaction().isActive())
 			entityManager.getTransaction().rollback();
 			throw e;
 		} finally {
