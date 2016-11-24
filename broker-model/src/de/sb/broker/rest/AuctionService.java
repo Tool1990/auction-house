@@ -87,9 +87,8 @@ public class AuctionService {
                 getEM().flush();
             } catch (Exception e) {
             } finally {
-//                Cache cache = entityManager.getEntityManagerFactory().getCache();
-//                cache.evict(auctionTemplate.getSeller().getClass(), auctionTemplate.getSeller().getIdentity());
-//                entityManager.close();
+                Cache cache = getEM().getEntityManagerFactory().getCache();
+                cache.evict(auctionTemplate.getSeller().getClass(), auctionTemplate.getSeller().getIdentity());
 
                 if (!getEM().getTransaction().isActive())
                     getEM().getTransaction().begin();
