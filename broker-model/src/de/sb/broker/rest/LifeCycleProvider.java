@@ -20,6 +20,8 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
+
 import de.sb.broker.model.Person;
 import de.sb.java.Copyright;
 import de.sb.java.net.HttpAuthenticationCodec;
@@ -47,7 +49,7 @@ import de.sb.java.net.HttpAuthenticationCodec;
  * precondition that any HTTP request is processed within a single thread. This assumption may be
  * broken in some environments, but works nicely in most, like Jersey.
  */
-// TODO Uncomment this: @Provider
+@Provider
 @Copyright(year=2013, holders="Sascha Baumeister")
 public class LifeCycleProvider implements ContainerRequestFilter, ContainerResponseFilter, ExceptionMapper<Throwable> {
 	static private volatile EntityManagerFactory BROKER_FACTORY;
