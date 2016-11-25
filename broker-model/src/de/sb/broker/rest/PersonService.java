@@ -130,7 +130,7 @@ public class PersonService {
         try {
             Person person = entityManager.find(Person.class, personIdentity);
 
-            byte[] docHash = Document.documentHash(documentContent);
+            int docHash = Document.documentHash(documentContent);
             TypedQuery query = entityManager.createQuery(SQLAVATAR, Document.class);
             query.setParameter("docHash", docHash);
             List<Long> result = query.getResultList();

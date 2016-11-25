@@ -101,7 +101,6 @@ public class Person extends BaseEntity {
 
 	public void setAvatar(Document document) {
 		this.document = document;
-		document.getPersons().add(this);
 	}
 		
 	public byte[] getPasswordHash() {

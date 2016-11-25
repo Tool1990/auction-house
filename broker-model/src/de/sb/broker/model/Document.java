@@ -30,7 +30,7 @@ public class Document extends BaseEntity {
     @Column(name ="documentHash", nullable = false)
     @NotNull
     @XmlElement
-    private byte[] hash;
+    private int hash;
 
     @OneToMany(mappedBy = "document")
     private Set<Person> persons;
@@ -60,25 +60,16 @@ public class Document extends BaseEntity {
         this.content = content;
     }
 
-    public void setHash(byte[] hash) {
+    public void setHash(int hash) {
         this.hash = hash;
     }
 
-    public byte[] getHash() {
+    public int getHash() {
         return hash;
     }
 
-    static public byte[] documentHash(byte[] content){
-        MessageDigest messageDigest = null;
-
-        try {
-            messageDigest = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            System.out.println("NoSuchAlgorithmException: " + e.getStackTrace());
-        }
-
-        messageDigest.update(content);
-        return messageDigest.digest();
+    static public int documentHash(byte[] content){
+        return content.hashCode();
     }
 
     public String getType() {

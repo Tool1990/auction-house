@@ -17,7 +17,7 @@ CREATE TABLE BaseEntity (
 CREATE TABLE Document (
 	documentIdentity BIGINT NOT NULL,
 	type VARCHAR(16) NOT NULL,
-	documentHash BINARY(32) NOT NULL,
+	documentHash BIGINT NOT NULL,
 	content MEDIUMBLOB NOT NULL,
 	PRIMARY KEY (documentIdentity),
 	UNIQUE KEY (documentHash),
