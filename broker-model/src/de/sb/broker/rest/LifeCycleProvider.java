@@ -4,6 +4,8 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -121,12 +123,15 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 
 
 		TypedQuery<Person> q = brokerManager().createQuery(PERSON_BY_ALIAS, Person.class);
-		Person person = q.setParameter("alias", username).getResultList().get(0);
+		List<Person> resultlist = q.setParameter("alias", username).getResultList();
+		Person person = null;
+		if (resultlist.size() > 0)
+			person = resultlist.get(0);
 		if (person == null ){
 			throw new NotAuthorizedException("Basic");
 		}else {
 				System.out.println(person.getPasswordHash() + "        " + Person.passwordHash(password));
-			if (person.getPasswordHash().equals(Person.passwordHash(password))) {
+			if (Arrays.toString(person.getPasswordHash()).equals(Arrays.toString(Person.passwordHash(password)))) {
 				return person;
 			}else {
 				throw new NotAuthorizedException("Basic");

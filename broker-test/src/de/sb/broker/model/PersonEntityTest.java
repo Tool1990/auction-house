@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -31,6 +32,12 @@ public class PersonEntityTest extends EntityTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        String string = "string";
+        String testHash1 = Arrays.toString(Person.passwordHash(string));
+		String testHash2 = Arrays.toString(Person.passwordHash(string));
+
+
+		assertEquals(testHash1,testHash2);
 
         assertEquals(0, validator.validate(testPerson).size());
 
@@ -119,7 +126,6 @@ public class PersonEntityTest extends EntityTest {
             testPerson.setAvatar(testDoc);
 			entityManager.merge(testPerson);
 			entityManager.getTransaction().commit();
-			System.out.println("######################" + testPerson.getDocumentReference() + "     "+  testDoc.getIdentity());
             assertEquals(testPerson.getDocumentReference(), testDoc.getIdentity());
             entityManager.clear();
 
@@ -127,7 +133,6 @@ public class PersonEntityTest extends EntityTest {
 			testPerson = entityManager.find(Person.class,personIdentity);
 
 			testDoc = entityManager.find(Document.class,testPerson.getDocumentReference());
-			System.out.println("######################" + testPerson.getDocumentReference() + "     " + testDoc.getIdentity());
 			entityManager.getTransaction().rollback();
 			entityManager.clear();
 

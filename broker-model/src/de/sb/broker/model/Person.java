@@ -69,18 +69,18 @@ public class Person extends BaseEntity {
 	public enum Group {
 		ADMIN, USER
 	}
-	
+
 	static public byte[] passwordHash(String password){
-		byte[] bytes = null;
+		MessageDigest messageDigest = null;
+
 		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-256");
-			bytes = md.digest(password.getBytes());
+			messageDigest = MessageDigest.getInstance("SHA-256");
+		} catch (NoSuchAlgorithmException e) {
+			System.out.println("NoSuchAlgorithmException: " + e.getStackTrace());
 		}
-		catch (NoSuchAlgorithmException e)
-		{
-			e.printStackTrace();
-		}
-		return bytes;
+
+		messageDigest.update(password.getBytes());
+		return messageDigest.digest();
 	}
 	
 	public Person() {

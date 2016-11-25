@@ -6,6 +6,7 @@ import de.sb.java.net.HttpAuthenticationCodec;
 import org.glassfish.jersey.server.ParamException;
 
 import javax.persistence.*;
+import javax.validation.constraints.Min;
 import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -20,7 +21,10 @@ public class AuctionService {
     }
 
     public Person authenticate(String authHeaderString){
-        return LifeCycleProvider.authenticate(authHeaderString);
+        Person person = LifeCycleProvider.authenticate(authHeaderString);
+        if (person == null)
+            throw new ClientErrorException(401);
+        return person;
     }
 
 
@@ -28,8 +32,11 @@ public class AuctionService {
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the auctions matching the given criteria, with null or missing parameters identifying omitted criteria.
-    public Auction[] getAuctions(@QueryParam("title") String title, @QueryParam("priceMin") long priceMin, @QueryParam("priceMax") long priceMax, @HeaderParam("Authorization") String authString) {
+    public Auction[] getAuctions(@QueryParam("title") String title, @QueryParam("priceMin") long priceMin, @QueryParam("priceMax") @Min(1) long priceMax, @HeaderParam("Authorization") String authString) {
         Person person = authenticate(authString);
+        if (!person.getGroup().equals(Person.Group.ADMIN)){
+            throw new ClientErrorException(404);
+        }
         Query q;
         Auction[] matchingAuctions = null;
         try {
@@ -61,11 +68,18 @@ public class AuctionService {
         try {
             auction = getEM().find(Auction.class, auctionIdentity);
 
-        }catch(Throwable e){
-               throw new WebApplicationException(e);
+
+        }catch(RollbackException exception){
+            throw new ClientErrorException(409);
+        }catch(IllegalArgumentException exception){
+            throw new ClientErrorException(400);
         } finally {
             if (!getEM().getTransaction().isActive())
                 getEM().getTransaction().begin();
+        }
+
+        if (auction == null){
+            throw new ClientErrorException(404);
         }
         return auction;
     }
