@@ -9,8 +9,7 @@ import javax.xml.bind.annotation.*;
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "discriminator", discriminatorType = DiscriminatorType.STRING)
 @XmlAccessorType(XmlAccessType.NONE)
-@XmlType
-@XmlSeeAlso({Person.class, Auction.class, Bid.class})
+@XmlSeeAlso({Person.class, Auction.class, Bid.class, Document.class})
 public abstract class BaseEntity implements Comparable<BaseEntity>{
 
 	@Id

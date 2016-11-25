@@ -4,6 +4,8 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
@@ -14,6 +16,8 @@ import java.util.Set;
 @Table(name="Document", schema = "broker")
 @DiscriminatorValue(value = "Document")
 @PrimaryKeyJoinColumn(name = "documentIdentity")
+@XmlType
+@XmlRootElement
 public class Document extends BaseEntity {
 
     @Column(name ="type", nullable = false)

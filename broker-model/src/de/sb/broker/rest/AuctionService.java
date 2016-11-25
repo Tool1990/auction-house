@@ -32,7 +32,6 @@ public class AuctionService {
             for (int i = 0; i < resultList.size(); i++) {
                 matchingAuctions[i] = entityManager.find(Auction.class, resultList.get(i));
             }
-        } catch (Exception e) {
         } finally {
             entityManager.close();
         }
@@ -48,7 +47,6 @@ public class AuctionService {
         EntityManager em = entityManagerFactory.createEntityManager();
         try {
             auction = em.find(Auction.class, auctionIdentity);
-        } catch (Exception e) {
         } finally {
             em.close();
         }
@@ -66,7 +64,6 @@ public class AuctionService {
                 entityManager.getTransaction().begin();
                 entityManager.persist(auctionTemplate);
                 entityManager.getTransaction().commit();
-            } catch (Exception e) {
             } finally {
                 entityManager.close();
             }
@@ -79,7 +76,6 @@ public class AuctionService {
                 auction.setDescription(auctionTemplate.getDescription());
                 auction.setUnitCount(auctionTemplate.getUnitCount());
                 entityManager.flush();
-            } catch (Exception e) {
             } finally {
                 Cache cache = entityManager.getEntityManagerFactory().getCache();
                 cache.evict(auctionTemplate.getSeller().getClass(), auctionTemplate.getSeller().getIdentity());

@@ -8,6 +8,8 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,6 +17,8 @@ import java.util.Set;
 @Table(name = "Auction", schema = "broker")
 @DiscriminatorValue(value = "Auction")
 @PrimaryKeyJoinColumn(name = "auctionIdentity")
+@XmlType
+@XmlRootElement
 @Inequal(leftAccessPath = "closureTimestamp", rightAccessPath = "creationTimestamp", operator = Inequal.Operator.GREATER)
 public class Auction extends BaseEntity {
 
@@ -72,12 +76,12 @@ public class Auction extends BaseEntity {
 		return seller == null ? 0 : seller.getIdentity();
 	}
 
-	@XmlElement
+	@XmlElement(name="closed")
 	public boolean isClosed() {
 		return System.currentTimeMillis() > closureTimestamp ? true : false;
 	}
 
-	@XmlElement
+	@XmlElement(name="sealed")
 	public boolean isSealed() {
 		return !bids.isEmpty() || isClosed();
 	}

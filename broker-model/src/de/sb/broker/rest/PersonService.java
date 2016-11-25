@@ -6,18 +6,15 @@ import de.sb.broker.model.Document;
 import de.sb.broker.model.Person;
 
 import javax.persistence.*;
-import javax.print.Doc;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 @Path("people")
 public class PersonService {
     static private final EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("broker");
-    static private final String SQL = "select p.identity from Person as p where  " +
+    static private final String SQLPEOPLE = "select p.identity from Person as p where  " +
             "(:alias is null or p.alias = :alias ) " +
             "and (:familyName is null or p.name.family = :familyName) and " +
             "(:givenName is null or p.name.given = :givenName and " +
@@ -29,30 +26,41 @@ public class PersonService {
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the people matching the given criteria, with null or missing parameters identifying omitted criteria.
-    public Person[] getPeople(@QueryParam("alias") String alias, @QueryParam("familyName") String familyName, @QueryParam("givenName") String givenName, @QueryParam("group") Person.Group group, @QueryParam("city") String city) {
-
+    public Person[] getPeople(
+            int firstResult,
+            int maxResults,
+            @QueryParam("alias") String alias,
+            @QueryParam("familyName") String familyName,
+            @QueryParam("givenName") String givenName,
+            @QueryParam("group") Person.Group group,
+            @QueryParam("city") String city
+    ) {
+        //TODO: alle query parameter, sortierung, exceptions nicht fangen wenn leerer catchblock, sämtlicher Funktionscore in try block packen
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         Person[] matchingPeople = null;
 
         try {
 
-            TypedQuery<Long> q = entityManager.createQuery(SQL, Long.class);
+            TypedQuery<Long> q = entityManager.createQuery(SQLPEOPLE, Long.class);
             q.setParameter("familyName", familyName);
             q.setParameter("givenName", givenName);
             q.setParameter("alias", alias);
             q.setParameter("group", group);
             q.setParameter("city", city);
+            if (firstResult > 0)
+                q.setFirstResult(firstResult);
+            if (maxResults > 0)
+                q.setMaxResults(maxResults);
             List<Long> resultList = q.getResultList();
             matchingPeople = new Person[resultList.size()];
             for (int i = 0; i < resultList.size(); i++) {
                 matchingPeople[i] = entityManager.find(Person.class, resultList.get(i));
             }
-        } catch (Exception e) {
         } finally {
             entityManager.close();
         }
 
-
+        Arrays.sort(matchingPeople, Comparator.comparing(Person::getAlias)); //(Person person) -> person.getAlias()
         return matchingPeople;
     }
 
@@ -61,15 +69,13 @@ public class PersonService {
     @Path("{identity}")
     //Returns  the person matching the given identity.
     public Person getPerson(@PathParam("identity") long personIdentity) {
-        Person person = null;
         EntityManager em = entityManagerFactory.createEntityManager();
         try {
-            person = em.find(Person.class, personIdentity);
-        } catch (Exception e) {
+            Person person = em.find(Person.class, personIdentity);
+            return person;
         } finally {
             em.close();
         }
-        return person;
     }
 
     @GET
@@ -90,13 +96,11 @@ public class PersonService {
                     resultList.add(bid.getAuction());
                 }
             }
-        } catch (Exception e) {
         } finally {
             entityManager.close();
         }
-        Auction[] results = new Auction[resultList.size()];
 
-        return resultList.toArray(results);
+        return resultList.toArray(new Auction[0]);
     }
 
     @GET
@@ -111,9 +115,8 @@ public class PersonService {
 
 
             //respone with no content if avatar null else response with avatar content
-            res = avatar == null ? Response.noContent().build() : Response.ok().entity(avatar.getContent()).header("mimetype", avatar.getType()).build();
-        } catch (Exception e) {
-        } finally {
+            res = avatar == null ? Response.noContent().build() : Response.ok(avatar.getContent(), avatar.getType()).build();
+        }  finally {
             entityManager.close();
         }
 
@@ -123,37 +126,35 @@ public class PersonService {
     @PUT
     @Consumes({MediaType.WILDCARD})
     @Path("{identity}/avatar")
-    public void setAvatar(byte[] documentContent, @HeaderParam("Accept") String contentType, @PathParam("identity") long personIdentity) {
+    public void setAvatar(byte[] documentContent, @HeaderParam("Content-type") String contentType, @PathParam("identity") long personIdentity) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
+        entityManager.getTransaction().begin();
         Document doc = null;
 
         try {
             Person person = entityManager.find(Person.class, personIdentity);
-
+            //TODO: byte[] statt int
             int docHash = Document.documentHash(documentContent);
             TypedQuery query = entityManager.createQuery(SQLAVATAR, Document.class);
             query.setParameter("docHash", docHash);
             List<Long> result = query.getResultList();
-            if (result.size() != 0) {
-                entityManager.getTransaction().begin();
+            if (result.size() == 1) {
                 doc = entityManager.find(Document.class, result.get(0));
                 person.setAvatar(doc);
+                entityManager.flush();
             } else {
                 doc = new Document(contentType, documentContent);
-                entityManager.getTransaction().begin();
                 entityManager.persist(doc);
-                entityManager.getTransaction().commit();
-
-                entityManager.getTransaction().begin();
-                person.setAvatar(doc);
             }
-            entityManager.merge(person);
+            doc.setType(contentType);
             entityManager.getTransaction().commit();
 
+            entityManager.getTransaction().begin();
+            person.setAvatar(doc);
+            entityManager.getTransaction().commit();
 
-        } catch (Exception e) {
         } finally {
-            if (entityManager.getTransaction().isActive()){
+            if (entityManager.getTransaction().isActive()) {
                 entityManager.getTransaction().rollback();
             }
             Cache cache = entityManager.getEntityManagerFactory().getCache();
@@ -182,7 +183,6 @@ public class PersonService {
                 }
             }
             matchingBids = matchingBidsList.toArray(new Bid[matchingBidsList.size()]);
-        } catch (Exception e) {
         } finally {
             entityManager.close();
         }
@@ -203,7 +203,6 @@ public class PersonService {
                 entityManager.persist(personTemplate);
                 entityManager.getTransaction().commit();
                 identity = personTemplate.getIdentity();
-            } catch (Exception e) {
             } finally {
                 entityManager.close();
             }
@@ -222,7 +221,6 @@ public class PersonService {
                 }
                 identity = person.getIdentity();
                 entityManager.flush();
-            } catch (Exception e) {
             } finally {
                 entityManager.close();
             }

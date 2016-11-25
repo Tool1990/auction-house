@@ -8,6 +8,9 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+import javax.xml.bind.annotation.XmlType;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
@@ -17,6 +20,8 @@ import java.util.Set;
 @Table(name="Person", schema = "broker")
 @DiscriminatorValue(value = "Person")
 @PrimaryKeyJoinColumn(name = "personIdentity")
+@XmlType
+@XmlRootElement
 public class Person extends BaseEntity {
 
 	@Column(unique = true, nullable = false)
@@ -28,6 +33,7 @@ public class Person extends BaseEntity {
 	@Column(nullable = false)
 	@NotNull
 	@Size(min = 32, max = 32)
+	@XmlTransient
 	private byte[] passwordHash;
 
 	@Enumerated(EnumType.STRING)
