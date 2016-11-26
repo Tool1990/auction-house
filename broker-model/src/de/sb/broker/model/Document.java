@@ -6,35 +6,33 @@ import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Set;
 
 
 @Entity
-@Table(name="Document", schema = "broker")
+@Table(name = "Document", schema = "broker")
 @DiscriminatorValue(value = "Document")
 @PrimaryKeyJoinColumn(name = "documentIdentity")
 @XmlType
 @XmlRootElement
 public class Document extends BaseEntity {
 
-    @Column(name ="type", nullable = false)
+    @Column(name = "type", nullable = false)
     @NotNull
     @XmlElement
-    @Size(min = 1, max=16)
+    @Size(min = 1, max = 16)
     private String type;
 
-    @Column(name ="content", nullable = false)
+    @Column(name = "content", nullable = false)
     @NotNull
     @XmlElement
     private byte[] content;
 
-    @Column(name ="documentHash", nullable = false)
+    @Column(name = "documentHash", nullable = false)
     @NotNull
     @XmlElement
-    private int hash;
+    private byte[] hash;
 
     @OneToMany(mappedBy = "document")
     private Set<Person> persons;
@@ -52,8 +50,8 @@ public class Document extends BaseEntity {
         super();
         this.type = type;
         this.content = content;
-        this.hash  = Document.documentHash(content);
-        persons = new HashSet<Person>();
+        this.hash = getHash(content);
+        persons = new HashSet<>();
     }
 
     public byte[] getContent() {
@@ -64,16 +62,12 @@ public class Document extends BaseEntity {
         this.content = content;
     }
 
-    public void setHash(int hash) {
+    public void setHash(byte[] hash) {
         this.hash = hash;
     }
 
-    public int getHash() {
+    public byte[] getHash() {
         return hash;
-    }
-
-    static public int documentHash(byte[] content){
-        return content.hashCode();
     }
 
     public String getType() {

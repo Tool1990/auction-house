@@ -120,7 +120,7 @@ public class BidEntityTest extends EntityTest {
 	public Person populateTestPerson() {
 		this.testSeller.setAlias("testAlias");
 		this.testSeller.setGroup(Person.Group.USER);
-		this.testSeller.setPasswordHash(Person.passwordHash("123"));
+		this.testSeller.setPasswordHash(Person.getHash("123".getBytes()));
 		this.testSeller.getName().setFamily("testFamilyName");
 		this.testSeller.getName().setGiven("testGivenName");
 		this.testSeller.getAddress().setCity("testCity");
@@ -132,7 +132,7 @@ public class BidEntityTest extends EntityTest {
 	public Person populateTestPerson2() {
 		this.testBidder.setAlias("testAlias2");
 		this.testBidder.setGroup(Person.Group.USER);
-		this.testBidder.setPasswordHash(Person.passwordHash("1234"));
+		this.testBidder.setPasswordHash(Person.getHash("1234".getBytes()));
 		this.testBidder.getName().setFamily("testFamilyName2");
 		this.testBidder.getName().setGiven("testGivenName2");
 		this.testBidder.getAddress().setCity("testCity2");

@@ -6,10 +6,8 @@ import org.junit.Test;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
-import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import java.util.Calendar;
-import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -20,10 +18,10 @@ public class AuctionEntityTest extends EntityTest {
     Auction auction;
     Person testPerson = new Person();
 
-    private Auction createTestAuction(){
+    private Auction createTestAuction() {
         auction.setAskingPrice(200);
         Calendar cal = Calendar.getInstance();
-        cal.set(2017,11,03);
+        cal.set(2017, 11, 03);
         auction.setClosureTimestamp(cal.getTime().getTime());
         auction.setDescription("This is a Test Auction");
         auction.setTitle("testAuction");
@@ -32,10 +30,10 @@ public class AuctionEntityTest extends EntityTest {
         return auction;
     }
 
-    private Person populateTestPerson(){
+    private Person populateTestPerson() {
         testPerson.setAlias("testAlias");
         testPerson.setGroup(Person.Group.USER);
-        testPerson.setPasswordHash(Person.passwordHash("123"));
+        testPerson.setPasswordHash(Person.getHash("123".getBytes()));
         testPerson.getName().setFamily("testFamilyName");
         testPerson.getName().setGiven("testGivenName");
         testPerson.getAddress().setCity("testCity");
@@ -45,7 +43,7 @@ public class AuctionEntityTest extends EntityTest {
     }
 
     @Test
-    public void testConstraints(){
+    public void testConstraints() {
         final Validator val = this.getEntityValidatorFactory().getValidator();
         auction = new Auction(populateTestPerson());
         createTestAuction();
@@ -85,15 +83,15 @@ public class AuctionEntityTest extends EntityTest {
     }
 
     @Test
-    public void testLifeCycle(){
+    public void testLifeCycle() {
 
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("broker");
         EntityManager em = emf.createEntityManager();
 
         // Write test
-        try{
+        try {
 
-        em.getTransaction().begin();
+            em.getTransaction().begin();
 
 
             Person testPerson = populateTestPerson();
@@ -113,10 +111,10 @@ public class AuctionEntityTest extends EntityTest {
             em.clear();
 
             em.getTransaction().begin();
-            auction = em.find(Auction.class,auction.getIdentity());
-            testPerson = em.find(Person.class,auction.getSellerReference());
+            auction = em.find(Auction.class, auction.getIdentity());
+            testPerson = em.find(Person.class, auction.getSellerReference());
 
-            System.out.println("######################" + auction.getSellerReference() + "     "+  testPerson.getIdentity());
+            System.out.println("######################" + auction.getSellerReference() + "     " + testPerson.getIdentity());
             em.getTransaction().rollback();
             em.clear();
 
@@ -141,10 +139,8 @@ public class AuctionEntityTest extends EntityTest {
             em.clear();
 
 
-        }
-
-        finally{
-            if(em.getTransaction().isActive()){
+        } finally {
+            if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
             this.emptyWasteBasket();

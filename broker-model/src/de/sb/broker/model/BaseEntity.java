@@ -2,7 +2,12 @@ package de.sb.broker.model;
 
 import javax.persistence.*;
 import javax.validation.constraints.Min;
-import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 @Entity
 @Table(name="BaseEntity", schema = "broker")
@@ -46,5 +51,16 @@ public abstract class BaseEntity implements Comparable<BaseEntity>{
 	}
 	public long getCreationTimestamp() {
 		return creationTimestamp;
+	}
+
+	static public byte[] getHash(byte[] bytes){
+		MessageDigest messageDigest = null;
+		try {
+			messageDigest = MessageDigest.getInstance("SHA-256");
+			messageDigest.update(bytes);
+		} catch (NoSuchAlgorithmException e) {
+			System.out.println("NoSuchAlgorithmException: " + e.getStackTrace());
+		}
+		return messageDigest.digest();
 	}
 }

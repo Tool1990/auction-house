@@ -14,54 +14,70 @@ import java.util.*;
 @Path("people")
 public class PersonService {
     static private final EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("broker");
-    static private final String SQLPEOPLE = "select p.identity from Person as p where  " +
-            "(:alias is null or p.alias = :alias ) " +
-            "and (:familyName is null or p.name.family = :familyName) and " +
-            "(:givenName is null or p.name.given = :givenName and " +
+    static private final String SQL_PEOPLE = "select p.identity from Person as p where  " +
+            "(:alias is null or p.alias = :alias) and " +
+            "(:familyName is null or p.name.family = :familyName) and " +
+            "(:givenName is null or p.name.given = :givenName) and " +
             "(:group is null or p.group = :group) and " +
-            "(:city is null or p.address.city = :city)" +
-            ")";
-    private static final String SQLAVATAR = "select d.identity from Document as d where d.hash = :docHash";
+            "(:city is null or p.address.city = :city) and " +
+            "(:postCode is null or p.address.postCode = :postCode) and " +
+            "(:street is null or p.address.street = :street) and " +
+            "(:email is null or p.contact.email = :email) and " +
+            "(:phone is null or p.contact.phone = :phone) and " +
+            "(:creationMin is null or p.creationTimestamp >= :creationMin) and " +
+            "(:creationMax is null or p.creationTimestamp <= :creationMax)";
+    private static final String SQL_AVATAR = "select d.identity from Document as d where d.hash = :docHash";
 
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the people matching the given criteria, with null or missing parameters identifying omitted criteria.
     public Person[] getPeople(
-            int firstResult,
-            int maxResults,
+            @QueryParam("firstResult") int firstResult,
+            @QueryParam("maxResults") int maxResults,
             @QueryParam("alias") String alias,
             @QueryParam("familyName") String familyName,
             @QueryParam("givenName") String givenName,
             @QueryParam("group") Person.Group group,
-            @QueryParam("city") String city
+            @QueryParam("city") String city,
+            @QueryParam("postCode") String postCode,
+            @QueryParam("street") String street,
+            @QueryParam("email") String email,
+            @QueryParam("phone") String phone,
+            @QueryParam("creationMin") Long creationMin,
+            @QueryParam("creationMax") Long creationMax
     ) {
-        //TODO: alle query parameter, sortierung, exceptions nicht fangen wenn leerer catchblock, sämtlicher Funktionscore in try block packen
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Person[] matchingPeople = null;
-
         try {
-
-            TypedQuery<Long> q = entityManager.createQuery(SQLPEOPLE, Long.class);
+            TypedQuery<Long> q = entityManager.createQuery(SQL_PEOPLE, Long.class);
             q.setParameter("familyName", familyName);
             q.setParameter("givenName", givenName);
             q.setParameter("alias", alias);
             q.setParameter("group", group);
             q.setParameter("city", city);
+            q.setParameter("postCode", postCode);
+            q.setParameter("street", street);
+            q.setParameter("email", email);
+            q.setParameter("phone", phone);
+            q.setParameter("creationMin", creationMin);
+            q.setParameter("creationMax", creationMax);
+
             if (firstResult > 0)
                 q.setFirstResult(firstResult);
             if (maxResults > 0)
                 q.setMaxResults(maxResults);
+
             List<Long> resultList = q.getResultList();
-            matchingPeople = new Person[resultList.size()];
+            Person[] matchingPeople = new Person[resultList.size()];
+
             for (int i = 0; i < resultList.size(); i++) {
                 matchingPeople[i] = entityManager.find(Person.class, resultList.get(i));
             }
+
+            Arrays.sort(matchingPeople, Comparator.comparing(Person::getAlias)); //(Person person) -> person.getAlias()
+            return matchingPeople;
         } finally {
             entityManager.close();
         }
-
-        Arrays.sort(matchingPeople, Comparator.comparing(Person::getAlias)); //(Person person) -> person.getAlias()
-        return matchingPeople;
     }
 
     @GET
@@ -71,8 +87,7 @@ public class PersonService {
     public Person getPerson(@PathParam("identity") long personIdentity) {
         EntityManager em = entityManagerFactory.createEntityManager();
         try {
-            Person person = em.find(Person.class, personIdentity);
-            return person;
+            return em.find(Person.class, personIdentity);
         } finally {
             em.close();
         }
@@ -84,11 +99,9 @@ public class PersonService {
     //Returns all auctions associated with the person matching the given identity (as seller or bidder).
     public Auction[] getAuctions(@PathParam("identity") long personIdentity) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        List<Auction> resultList = null;
         try {
             Person person = entityManager.find(Person.class, personIdentity);
-            resultList = new ArrayList(person.getAuctions());
-
+            List<Auction> resultList = new ArrayList(person.getAuctions());
             List<Bid> bidsList = new ArrayList(person.getBids());
 
             for (Bid bid : bidsList) {
@@ -96,11 +109,13 @@ public class PersonService {
                     resultList.add(bid.getAuction());
                 }
             }
+
+            Auction[] auctions = resultList.toArray(new Auction[0]);
+            Arrays.sort(auctions, Comparator.comparing(Auction::getTitle));
+            return auctions;
         } finally {
             entityManager.close();
         }
-
-        return resultList.toArray(new Auction[0]);
     }
 
     @GET
@@ -108,19 +123,16 @@ public class PersonService {
     @Path("{identity}/avatar")
     public Response getAvatar(@PathParam("identity") long personIdentity) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Response res = null;
         try {
             Person person = entityManager.find(Person.class, personIdentity);
             Document avatar = person.getAvatar();
-
-
             //respone with no content if avatar null else response with avatar content
-            res = avatar == null ? Response.noContent().build() : Response.ok(avatar.getContent(), avatar.getType()).build();
-        }  finally {
+            Response res = avatar == null ? Response.noContent().build() : Response.ok(avatar.getContent(), avatar.getType()).build();
+
+            return res;
+        } finally {
             entityManager.close();
         }
-
-        return res;
     }
 
     @PUT
@@ -133,9 +145,8 @@ public class PersonService {
 
         try {
             Person person = entityManager.find(Person.class, personIdentity);
-            //TODO: byte[] statt int
-            int docHash = Document.documentHash(documentContent);
-            TypedQuery query = entityManager.createQuery(SQLAVATAR, Document.class);
+            byte[] docHash = Document.getHash(documentContent);
+            TypedQuery query = entityManager.createQuery(SQL_AVATAR, Document.class);
             query.setParameter("docHash", docHash);
             List<Long> result = query.getResultList();
             if (result.size() == 1) {
@@ -169,9 +180,7 @@ public class PersonService {
     //Returns all bids for closed auctions associated with the bidder matching the given identity.
     public Bid[] getBids(@PathParam("identity") long personIdentity) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Bid[] matchingBids = null;
         try {
-
             Person person = entityManager.find(Person.class, personIdentity);
             Collection<Bid> resultList = person.getBids();
             List<Bid> matchingBidsList = new ArrayList<>();
@@ -182,11 +191,12 @@ public class PersonService {
                     matchingBidsList.add(bid);
                 }
             }
-            matchingBids = matchingBidsList.toArray(new Bid[matchingBidsList.size()]);
+            Bid[] bids = matchingBidsList.toArray(new Bid[0]);
+            Arrays.sort(bids, Comparator.comparing(Bid::getPrice));
+            return bids;
         } finally {
             entityManager.close();
         }
-        return matchingBids;
     }
 
 
@@ -195,19 +205,16 @@ public class PersonService {
     //Creates or modifies an auction from the given template data. Note that an auction may only be modified as long as it is not sealed (i.e. is open and still without bids).
     public long setPerson(Person personTemplate, @HeaderParam("set-password") String newPassword) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
-        Person person = entityManager.find(Person.class, personTemplate.getIdentity());
-        long identity = 0;
-        if (person == null) {
-            try {
+        try {
+            Person person = entityManager.find(Person.class, personTemplate.getIdentity());
+            long identity;
+
+            if (person == null) {
                 entityManager.getTransaction().begin();
                 entityManager.persist(personTemplate);
                 entityManager.getTransaction().commit();
                 identity = personTemplate.getIdentity();
-            } finally {
-                entityManager.close();
-            }
-        } else {
-            try {
+            } else {
                 entityManager.getTransaction().begin();
                 person.setAlias(personTemplate.getAlias());
                 person.setGroup(personTemplate.getGroup());
@@ -217,15 +224,16 @@ public class PersonService {
                 person.getName().setFamily(personTemplate.getName().getFamily());
                 person.getName().setGiven(personTemplate.getName().getGiven());
                 if (newPassword != "" && newPassword != null) {
-                    person.setPasswordHash(Person.passwordHash(newPassword));
+                    person.setPasswordHash(Person.getHash(newPassword.getBytes()));
                 }
                 identity = person.getIdentity();
                 entityManager.flush();
-            } finally {
-                entityManager.close();
             }
+
+            return identity;
+        } finally {
+            entityManager.close();
         }
-        return identity;
     }
 }
 

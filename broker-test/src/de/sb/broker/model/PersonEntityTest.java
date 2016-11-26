@@ -27,7 +27,7 @@ public class PersonEntityTest extends EntityTest {
         try {
             testDoc.setType("png");
             testDoc.setContent(Files.readAllBytes(Paths.get(new File("src/META-INF/klein.png").getAbsolutePath())));
-            testDoc.setHash(Document.documentHash(testDoc.getContent()));
+            testDoc.setHash(Document.getHash(testDoc.getContent()));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -86,7 +86,7 @@ public class PersonEntityTest extends EntityTest {
         try {
             testDoc.setType("png");
             testDoc.setContent(Files.readAllBytes(Paths.get(new File("src/META-INF/klein.png").getAbsolutePath())));
-            testDoc.setHash(Document.documentHash(testDoc.getContent()));
+            testDoc.setHash(Document.getHash(testDoc.getContent()));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -164,7 +164,7 @@ public class PersonEntityTest extends EntityTest {
 	private Person populateTestPerson() {
 		testPerson.setAlias("testAlias");
 		testPerson.setGroup(Person.Group.USER);
-		testPerson.setPasswordHash(Person.passwordHash("123"));
+		testPerson.setPasswordHash(Person.getHash("123".getBytes()));
 		testPerson.getName().setFamily("testFamilyName");
 		testPerson.getName().setGiven("testGivenName");
 		testPerson.getAddress().setCity("testCity");
