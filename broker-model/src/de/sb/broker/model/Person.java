@@ -8,8 +8,6 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -139,18 +137,5 @@ public class Person extends BaseEntity {
 
     public long getDocumentReference() {
         return getAvatar() == null ? 0 : getAvatar().getIdentity();
-    }
-
-    static public byte[] passwordHash(String password){
-        MessageDigest messageDigest = null;
-
-        try {
-            messageDigest = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            System.out.println("NoSuchAlgorithmException: " + e.getStackTrace());
-        }
-
-        messageDigest.update(password.getBytes());
-        return messageDigest.digest();
     }
 }

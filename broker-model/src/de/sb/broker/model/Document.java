@@ -6,8 +6,6 @@ import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -39,7 +37,7 @@ public class Document extends BaseEntity {
     @OneToMany(mappedBy = "document")
     private Set<Person> persons;
 
-    public Document() {
+    protected Document() {
         super();
     }
 
@@ -52,7 +50,7 @@ public class Document extends BaseEntity {
         super();
         this.type = type;
         this.content = content;
-        this.hash = documentHash(content);
+        this.hash = getHash(content);
         persons = new HashSet<>();
     }
 
@@ -68,20 +66,9 @@ public class Document extends BaseEntity {
         this.hash = hash;
     }
 
-    static public byte[] documentHash(byte[] content){
-        MessageDigest messageDigest = null;
-
-        try {
-            messageDigest = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            System.out.println("NoSuchAlgorithmException: " + e.getStackTrace());
-        }
-
-        messageDigest.update(content);
-        return messageDigest.digest();
+    public byte[] getHash() {
+        return hash;
     }
-
-
 
     public String getType() {
 
