@@ -37,7 +37,7 @@ public class Document extends BaseEntity {
     @OneToMany(mappedBy = "document")
     private Set<Person> persons;
 
-    protected Document() {
+    public Document() {
         super();
     }
 
