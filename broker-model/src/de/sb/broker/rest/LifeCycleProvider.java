@@ -130,7 +130,7 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 		if (person == null ){
 			throw new NotAuthorizedException("Basic");
 		}else {
-			if (Arrays.toString(person.getPasswordHash()).equals(Arrays.toString(Person.passwordHash(password)))) {
+			if (Arrays.toString(person.getPasswordHash()).equals(Arrays.toString(Person.getHash(password.getBytes())))) {
 				return person;
 			}else {
 				throw new NotAuthorizedException("Basic", 401);
