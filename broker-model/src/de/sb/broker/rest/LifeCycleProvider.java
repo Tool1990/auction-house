@@ -4,13 +4,12 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.PersistenceException;
+import javax.persistence.*;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.WebApplicationException;
@@ -20,6 +19,8 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
+
 import de.sb.broker.model.Person;
 import de.sb.java.Copyright;
 import de.sb.java.net.HttpAuthenticationCodec;
@@ -47,7 +48,7 @@ import de.sb.java.net.HttpAuthenticationCodec;
  * precondition that any HTTP request is processed within a single thread. This assumption may be
  * broken in some environments, but works nicely in most, like Jersey.
  */
-// TODO Uncomment this: @Provider
+@Provider
 @Copyright(year=2013, holders="Sascha Baumeister")
 public class LifeCycleProvider implements ContainerRequestFilter, ContainerResponseFilter, ExceptionMapper<Throwable> {
 	static private volatile EntityManagerFactory BROKER_FACTORY;
@@ -118,8 +119,23 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 		// password, creating a query using the constant below, and returning the person if it matches the password hash.
 		// If there is none, or if it fails the password hash check, then throw NotAuthorizedException("Basic"). Note
 		// that this exception type is a specialized Subclass of ClientErrorException that is capable of storing a
-		// challenge, in this case for Basic Authorization. 
-		throw new AssertionError(PERSON_BY_ALIAS);
+		// challenge, in this case for Basic Authorization.
+
+
+		TypedQuery<Person> q = brokerManager().createQuery(PERSON_BY_ALIAS, Person.class);
+		List<Person> resultlist = q.setParameter("alias", username).getResultList();
+		Person person = null;
+		if (resultlist.size() > 0)
+			person = resultlist.get(0);
+		if (person == null ){
+			throw new NotAuthorizedException("Basic");
+		}else {
+			if (Arrays.toString(person.getPasswordHash()).equals(Arrays.toString(Person.passwordHash(password)))) {
+				return person;
+			}else {
+				throw new NotAuthorizedException("Basic", 401);
+			}
+		}
 	}
 
 
@@ -144,8 +160,8 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 	 */
 	public Response toResponse (final Throwable exception) throws NullPointerException {
 		final Response response = exception instanceof WebApplicationException
-			? ((WebApplicationException) exception).getResponse()
-			: Response.status(INTERNAL_SERVER_ERROR).build();
+				? ((WebApplicationException) exception).getResponse()
+				: Response.status(INTERNAL_SERVER_ERROR).build();
 
 		Logger.getGlobal().log(logLevel(response.getStatusInfo()), exception.getMessage(), exception);
 		return response;
