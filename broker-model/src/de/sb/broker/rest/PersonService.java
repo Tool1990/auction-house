@@ -119,6 +119,21 @@ public class PersonService {
 
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @Path("requester")
+    //Returns the requester
+    public Person getRequester(@HeaderParam("Authorization") String authString) {
+        try {
+            return LifeCycleProvider.authenticate(authString);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
+        } finally {
+            if (!getEM().getTransaction().isActive())
+                getEM().getTransaction().begin();
+        }
+    }
+
+    @GET
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @Path("{identity}/auctions")
     //Returns all auctions associated with the person matching the given identity (as seller or bidder).
     public Auction[] getAuctions(@PathParam("identity") long personIdentity, @HeaderParam("Authorization") String authString) {
@@ -184,10 +199,10 @@ public class PersonService {
             @PathParam("identity") long personIdentity,
             @HeaderParam("Authorization") String authString
     ) {
-        Document doc = null;
+        Person person = null;
         try {
             Person requester = LifeCycleProvider.authenticate(authString);
-            Person person = getEM().find(Person.class, personIdentity);
+            person = getEM().find(Person.class, personIdentity);
             if (person == null) {
                 throw new ClientErrorException(404);
             }
@@ -198,6 +213,7 @@ public class PersonService {
             TypedQuery query = getEM().createQuery(SQL_AVATAR, Document.class);
             query.setParameter("docHash", docHash);
             List<Long> result = query.getResultList();
+            Document doc;
             if (result.size() == 1) {
                 doc = getEM().find(Document.class, result.get(0));
                 doc.setType(contentType);
@@ -217,10 +233,12 @@ public class PersonService {
         } catch (RollbackException exception) {
             throw new ClientErrorException(409);
         } finally {
-            Cache cache = getEM().getEntityManagerFactory().getCache();
-            cache.evict(doc.getClass(), doc.getIdentity());
             if (!getEM().getTransaction().isActive())
                 getEM().getTransaction().begin();
+            if (person != null) {
+                Cache cache = getEM().getEntityManagerFactory().getCache();
+                cache.evict(person.getClass(), person.getIdentity());
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 package de.sb.broker.rest;
 
 import de.sb.broker.model.Auction;
+import de.sb.broker.model.Bid;
 import de.sb.broker.model.Person;
 
 import javax.persistence.Cache;
@@ -114,6 +115,29 @@ public class AuctionService {
         }
     }
 
+    @GET
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @Path("{identity}/bid")
+    //Returns the requesters bid for the auction matching the given identity
+    public Bid getBid(@PathParam("identity") long auctionIdentity, @HeaderParam("Authorization") String authString) {
+        try {
+            Person requester = LifeCycleProvider.authenticate(authString);
+            Auction auction = getEM().find(Auction.class, auctionIdentity);
+            if (auction == null) {
+                throw new ClientErrorException(404);
+            } else {
+                return auction.getBid(requester);
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
+        } finally {
+            if (!getEM().getTransaction().isActive())
+                getEM().getTransaction().begin();
+        }
+    }
+
     @PUT
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Creates or modifies an auction from the given template data. Note that an auction may only be modified as long as it is not sealed (i.e. is open and still without bids).
@@ -149,6 +173,58 @@ public class AuctionService {
             cache.evict(auctionTemplate.getSeller().getClass(), auctionTemplate.getSeller().getIdentity());
             if (!getEM().getTransaction().isActive())
                 getEM().getTransaction().begin();
+        }
+    }
+
+    @POST
+    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @Path("{identity}/bid")
+    //Creates or modifies the requesters bid for the given auction
+    public void setBid(
+            @PathParam("identity") long auctionIdentity,
+            @Min(0) long price,
+            @HeaderParam("Authorization") String authString
+    ) {
+        Auction auction = null;
+        Person requester = null;
+        try {
+            requester = LifeCycleProvider.authenticate(authString);
+            auction = getEM().find(Auction.class, auctionIdentity);
+            if (auction == null) {
+                throw new ClientErrorException(404);
+            }
+            Bid bid = auction.getBid(requester);
+
+            if (bid == null) { //create new bid
+                bid = new Bid(auction, requester);
+                bid.setPrice(price);
+                getEM().persist(bid);
+                getEM().getTransaction().commit();
+                getEM().getTransaction().begin();
+            } else if (price == 0) { //remove requesters bid
+                bid = getEM().getReference(Bid.class, bid.getIdentity());
+                getEM().remove(bid);
+                getEM().getTransaction().commit();
+            } else { //update requesters bid
+                bid = getEM().find(Bid.class, bid.getIdentity());
+                bid.setPrice(price);
+                getEM().flush();
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
+        } catch (RollbackException exception) {
+            throw new ClientErrorException(409);
+        } finally {
+            if (!getEM().getTransaction().isActive())
+                getEM().getTransaction().begin();
+
+            if (auction != null) {
+                Cache cache = getEM().getEntityManagerFactory().getCache();
+                cache.evict(auction.getClass(), auction.getIdentity());
+                cache.evict(requester.getClass(), requester.getIdentity());
+            }
         }
     }
 }
