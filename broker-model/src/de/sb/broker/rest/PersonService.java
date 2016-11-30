@@ -1,11 +1,13 @@
 package de.sb.broker.rest;
 
-import de.sb.broker.model.Auction;
-import de.sb.broker.model.Bid;
-import de.sb.broker.model.Document;
-import de.sb.broker.model.Person;
+import de.sb.broker.model.*;
 
 import javax.persistence.*;
+import javax.validation.Valid;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -28,27 +30,32 @@ public class PersonService {
             "(:creationMax is null or p.creationTimestamp <= :creationMax)";
     private static final String SQL_AVATAR = "select d.identity from Document as d where d.hash = :docHash";
 
+    private EntityManager getEM() {
+        return LifeCycleProvider.brokerManager();
+    }
+
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the people matching the given criteria, with null or missing parameters identifying omitted criteria.
     public Person[] getPeople(
-            @QueryParam("firstResult") int firstResult,
-            @QueryParam("maxResults") int maxResults,
+            @Min(0) @QueryParam("firstResult") int firstResult,
+            @Min(0) @QueryParam("maxResults") int maxResults,
             @QueryParam("alias") String alias,
-            @QueryParam("familyName") String familyName,
-            @QueryParam("givenName") String givenName,
+            @Size(min = 1, max = 31) @QueryParam("familyName") String familyName,
+            @Size(min = 1, max = 31) @QueryParam("givenName") String givenName,
             @QueryParam("group") Person.Group group,
-            @QueryParam("city") String city,
-            @QueryParam("postCode") String postCode,
-            @QueryParam("street") String street,
-            @QueryParam("email") String email,
-            @QueryParam("phone") String phone,
-            @QueryParam("creationMin") Long creationMin,
-            @QueryParam("creationMax") Long creationMax
+            @Size(min = 1, max = 63) @QueryParam("city") String city,
+            @Size(min = 1, max = 15) @QueryParam("postCode") String postCode,
+            @Size(min = 1, max = 63) @QueryParam("street") String street,
+            @Size(min = 1, max = 63) @Pattern(regexp = Contact.EMAIL_PATTERN) @QueryParam("email") String email,
+            @Size(min = 1, max = 63) @QueryParam("phone") String phone,
+            @Min(1) @QueryParam("creationMin") Long creationMin,
+            @Min(1) @QueryParam("creationMax") Long creationMax,
+            @HeaderParam("Authorization") String authString
     ) {
-        EntityManager entityManager = entityManagerFactory.createEntityManager();
         try {
-            TypedQuery<Long> q = entityManager.createQuery(SQL_PEOPLE, Long.class);
+            LifeCycleProvider.authenticate(authString);
+            TypedQuery<Long> q = getEM().createQuery(SQL_PEOPLE, Long.class);
             q.setParameter("familyName", familyName);
             q.setParameter("givenName", givenName);
             q.setParameter("alias", alias);
@@ -70,13 +77,20 @@ public class PersonService {
             Person[] matchingPeople = new Person[resultList.size()];
 
             for (int i = 0; i < resultList.size(); i++) {
-                matchingPeople[i] = entityManager.find(Person.class, resultList.get(i));
+                matchingPeople[i] = getEM().find(Person.class, resultList.get(i));
             }
-
             Arrays.sort(matchingPeople, Comparator.comparing(Person::getAlias)); //(Person person) -> person.getAlias()
+
             return matchingPeople;
+        } catch (IllegalArgumentException exception) {
+            throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
+        } catch (RollbackException exception) {
+            throw new ClientErrorException(409);
         } finally {
-            entityManager.close();
+            if (!getEM().getTransaction().isActive())
+                getEM().getTransaction().begin();
         }
     }
 
@@ -84,12 +98,22 @@ public class PersonService {
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @Path("{identity}")
     //Returns  the person matching the given identity.
-    public Person getPerson(@PathParam("identity") long personIdentity) {
-        EntityManager em = entityManagerFactory.createEntityManager();
+    public Person getPerson(@PathParam("identity") long personIdentity, @HeaderParam("Authorization") String authString) {
         try {
-            return em.find(Person.class, personIdentity);
+            LifeCycleProvider.authenticate(authString);
+            Person person = getEM().find(Person.class, personIdentity);
+            if (person == null) {
+                throw new ClientErrorException(404);
+            } else {
+                return person;
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
         } finally {
-            em.close();
+            if (!getEM().getTransaction().isActive())
+                getEM().getTransaction().begin();
         }
     }
 
@@ -97,10 +121,13 @@ public class PersonService {
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @Path("{identity}/auctions")
     //Returns all auctions associated with the person matching the given identity (as seller or bidder).
-    public Auction[] getAuctions(@PathParam("identity") long personIdentity) {
-        EntityManager entityManager = entityManagerFactory.createEntityManager();
+    public Auction[] getAuctions(@PathParam("identity") long personIdentity, @HeaderParam("Authorization") String authString) {
         try {
-            Person person = entityManager.find(Person.class, personIdentity);
+            LifeCycleProvider.authenticate(authString);
+            Person person = getEM().find(Person.class, personIdentity);
+            if (person == null) {
+                throw new ClientErrorException(404);
+            }
             List<Auction> resultList = new ArrayList(person.getAuctions());
             List<Bid> bidsList = new ArrayList(person.getBids());
 
@@ -109,68 +136,91 @@ public class PersonService {
                     resultList.add(bid.getAuction());
                 }
             }
-
             Auction[] auctions = resultList.toArray(new Auction[0]);
             Arrays.sort(auctions, Comparator.comparing(Auction::getTitle));
+
             return auctions;
+        } catch (IllegalArgumentException exception) {
+            throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
         } finally {
-            entityManager.close();
+            if (!getEM().getTransaction().isActive())
+                getEM().getTransaction().begin();
         }
     }
 
     @GET
     @Produces({MediaType.WILDCARD})
     @Path("{identity}/avatar")
-    public Response getAvatar(@PathParam("identity") long personIdentity) {
-        EntityManager entityManager = entityManagerFactory.createEntityManager();
+    public Response getAvatar(@PathParam("identity") long personIdentity, @HeaderParam("Authorization") String authString) {
         try {
-            Person person = entityManager.find(Person.class, personIdentity);
+            LifeCycleProvider.authenticate(authString);
+            Person person = getEM().find(Person.class, personIdentity);
+            if (person == null) {
+                throw new ClientErrorException(404);
+            }
             Document avatar = person.getAvatar();
             //respone with no content if avatar null else response with avatar content
             Response res = avatar == null ? Response.noContent().build() : Response.ok(avatar.getContent(), avatar.getType()).build();
 
             return res;
+        } catch (IllegalArgumentException exception) {
+            throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
         } finally {
-            entityManager.close();
+            if (!getEM().getTransaction().isActive())
+                getEM().getTransaction().begin();
         }
     }
 
     @PUT
     @Consumes({MediaType.WILDCARD})
     @Path("{identity}/avatar")
-    public void setAvatar(byte[] documentContent, @HeaderParam("Content-type") String contentType, @PathParam("identity") long personIdentity) {
-        EntityManager entityManager = entityManagerFactory.createEntityManager();
-        entityManager.getTransaction().begin();
+    public void setAvatar(
+            @NotNull byte[] documentContent,
+            @NotNull @HeaderParam("Content-type") String contentType,
+            @PathParam("identity") long personIdentity,
+            @HeaderParam("Authorization") String authString
+    ) {
         Document doc = null;
-
         try {
-            Person person = entityManager.find(Person.class, personIdentity);
+            Person requester = LifeCycleProvider.authenticate(authString);
+            Person person = getEM().find(Person.class, personIdentity);
+            if (person == null) {
+                throw new ClientErrorException(404);
+            }
+            if (requester.getIdentity() != personIdentity && !requester.getGroup().equals(Person.Group.ADMIN)) {
+                throw new ClientErrorException(403);
+            }
             byte[] docHash = Document.getHash(documentContent);
-            TypedQuery query = entityManager.createQuery(SQL_AVATAR, Document.class);
+            TypedQuery query = getEM().createQuery(SQL_AVATAR, Document.class);
             query.setParameter("docHash", docHash);
             List<Long> result = query.getResultList();
             if (result.size() == 1) {
-                doc = entityManager.find(Document.class, result.get(0));
-                person.setAvatar(doc);
-                entityManager.flush();
+                doc = getEM().find(Document.class, result.get(0));
+                doc.setType(contentType);
+                getEM().flush();
             } else {
                 doc = new Document(contentType, documentContent);
-                entityManager.persist(doc);
+                getEM().persist(doc);
             }
-            doc.setType(contentType);
-            entityManager.getTransaction().commit();
-
-            entityManager.getTransaction().begin();
+            getEM().getTransaction().commit();
+            getEM().getTransaction().begin();
             person.setAvatar(doc);
-            entityManager.getTransaction().commit();
-
+            getEM().flush();
+        } catch (IllegalArgumentException exception) {
+            throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
+        } catch (RollbackException exception) {
+            throw new ClientErrorException(409);
         } finally {
-            if (entityManager.getTransaction().isActive()) {
-                entityManager.getTransaction().rollback();
-            }
-            Cache cache = entityManager.getEntityManagerFactory().getCache();
+            Cache cache = getEM().getEntityManagerFactory().getCache();
             cache.evict(doc.getClass(), doc.getIdentity());
-            entityManager.close();
+            if (!getEM().getTransaction().isActive())
+                getEM().getTransaction().begin();
         }
     }
 
@@ -178,24 +228,32 @@ public class PersonService {
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @Path("{identity}/bids")
     //Returns all bids for closed auctions associated with the bidder matching the given identity.
-    public Bid[] getBids(@PathParam("identity") long personIdentity) {
-        EntityManager entityManager = entityManagerFactory.createEntityManager();
+    public Bid[] getBids(@PathParam("identity") long personIdentity, @HeaderParam("Authorization") String authString) {
         try {
-            Person person = entityManager.find(Person.class, personIdentity);
+            Person requester = LifeCycleProvider.authenticate(authString);
+            Person person = getEM().find(Person.class, personIdentity);
+            if (person == null) {
+                throw new ClientErrorException(404);
+            }
             Collection<Bid> resultList = person.getBids();
             List<Bid> matchingBidsList = new ArrayList<>();
 
             for (Bid bid : resultList) {
                 Auction auction = bid.getAuction();
-                if (auction.isClosed()) {
+                if (auction.isClosed() || requester.getIdentity() == personIdentity) {
                     matchingBidsList.add(bid);
                 }
             }
             Bid[] bids = matchingBidsList.toArray(new Bid[0]);
             Arrays.sort(bids, Comparator.comparing(Bid::getPrice));
             return bids;
+        } catch (IllegalArgumentException exception) {
+            throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
         } finally {
-            entityManager.close();
+            if (!getEM().getTransaction().isActive())
+                getEM().getTransaction().begin();
         }
     }
 
@@ -203,19 +261,26 @@ public class PersonService {
     @PUT
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.WILDCARD})
     //Creates or modifies an auction from the given template data. Note that an auction may only be modified as long as it is not sealed (i.e. is open and still without bids).
-    public long setPerson(Person personTemplate, @HeaderParam("set-password") String newPassword) {
-        EntityManager entityManager = entityManagerFactory.createEntityManager();
+    public long setPerson(
+            @Valid @NotNull Person personTemplate,
+            @HeaderParam("Set-password") String newPassword,
+            @HeaderParam("Authorization") String authString
+    ) {
+
         try {
-            Person person = entityManager.find(Person.class, personTemplate.getIdentity());
+            Person requester = LifeCycleProvider.authenticate(authString);
+            if ((requester.getIdentity() != personTemplate.getIdentity() || personTemplate.getGroup().equals(Person.Group.ADMIN))
+                    && !requester.getGroup().equals(Person.Group.ADMIN)) {
+                throw new ClientErrorException(403);
+            }
             long identity;
+            Person person = getEM().find(Person.class, personTemplate.getIdentity());
 
             if (person == null) {
-                entityManager.getTransaction().begin();
-                entityManager.persist(personTemplate);
-                entityManager.getTransaction().commit();
+                getEM().persist(personTemplate);
+                getEM().getTransaction().commit();
                 identity = personTemplate.getIdentity();
             } else {
-                entityManager.getTransaction().begin();
                 person.setAlias(personTemplate.getAlias());
                 person.setGroup(personTemplate.getGroup());
                 person.getAddress().setCity(personTemplate.getAddress().getCity());
@@ -227,13 +292,19 @@ public class PersonService {
                     person.setPasswordHash(Person.getHash(newPassword.getBytes()));
                 }
                 identity = person.getIdentity();
-                entityManager.flush();
+                getEM().flush();
             }
 
             return identity;
+        } catch (IllegalArgumentException exception) {
+            throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
+        } catch (RollbackException exception) {
+            throw new ClientErrorException(409);
         } finally {
-            entityManager.close();
+            if (!getEM().getTransaction().isActive())
+                getEM().getTransaction().begin();
         }
     }
 }
-

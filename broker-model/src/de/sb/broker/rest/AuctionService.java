@@ -3,8 +3,14 @@ package de.sb.broker.rest;
 import de.sb.broker.model.Auction;
 import de.sb.broker.model.Person;
 
-import javax.naming.AuthenticationException;
-import javax.persistence.*;
+import javax.persistence.Cache;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
+import javax.persistence.RollbackException;
+import javax.validation.Valid;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.Arrays;
@@ -14,17 +20,9 @@ import java.util.List;
 @Path("auctions")
 public class AuctionService {
 
-    public EntityManager getEM(){
+    private EntityManager getEM() {
         return LifeCycleProvider.brokerManager();
     }
-
-    public Person authenticate(String authHeaderString){
-        Person person = LifeCycleProvider.authenticate(authHeaderString);
-        if (person == null)
-            throw new ClientErrorException(401);
-        return person;
-    }
-
 
     static private final String SQL_AUCTIONS = "select a.identity from Auction as a where " +
             "(:title is null or a.title = :title) and " +
@@ -42,26 +40,22 @@ public class AuctionService {
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the auctions matching the given criteria, with null or missing parameters identifying omitted criteria.
     public Auction[] getAuctions(
-            @QueryParam("title") String title,
-            @QueryParam("description") String description,
-            @QueryParam("priceMin") Long priceMin,
-            @QueryParam("priceMax") Long priceMax,
-            @QueryParam("unitCountMin") Long unitCountMin,
-            @QueryParam("unitCountMax") Long unitCountMax,
-            @QueryParam("creationMin") Long creationMin,
-            @QueryParam("creationMax") Long creationMax,
-            @QueryParam("closureMin") Long closureMin,
-            @QueryParam("closureMax") Long closureMax,
+            @Min(0) @QueryParam("firstResult") int firstResult,
+            @Min(0) @QueryParam("maxResults") int maxResults,
+            @Size(min = 1, max = 255) @QueryParam("title") String title,
+            @Size(min = 1, max = 8189) @QueryParam("description") String description,
+            @Min(1) @QueryParam("priceMin") Long priceMin,
+            @Min(1) @QueryParam("priceMax") Long priceMax,
+            @Min(1) @QueryParam("unitCountMin") Long unitCountMin,
+            @Min(1) @QueryParam("unitCountMax") Long unitCountMax,
+            @Min(1) @QueryParam("creationMin") Long creationMin,
+            @Min(1) @QueryParam("creationMax") Long creationMax,
+            @Min(1) @QueryParam("closureMin") Long closureMin,
+            @Min(1) @QueryParam("closureMax") Long closureMax,
             @HeaderParam("Authorization") String authString
     ) {
-
-
         try {
-            Person person = authenticate(authString);
-            // Authorization not really needed here
-            if (!person.getGroup().equals(Person.Group.ADMIN)) {
-                throw new ClientErrorException(403);
-            }
+            LifeCycleProvider.authenticate(authString);
             Query q = getEM().createQuery(SQL_AUCTIONS);
             q.setParameter("title", title);
             q.setParameter("description", description);
@@ -74,6 +68,11 @@ public class AuctionService {
             q.setParameter("closureMin", closureMin);
             q.setParameter("closureMax", closureMax);
 
+            if (firstResult > 0)
+                q.setFirstResult(firstResult);
+            if (maxResults > 0)
+                q.setMaxResults(maxResults);
+
             List resultList = q.getResultList();
             Auction[] matchingAuctions = new Auction[resultList.size()];
             for (int i = 0; i < resultList.size(); i++) {
@@ -81,15 +80,11 @@ public class AuctionService {
             }
             Arrays.sort(matchingAuctions, Comparator.comparing(Auction::getTitle));
 
-            if (matchingAuctions.length == 0){
-                throw new ClientErrorException(404);
-            }
-
             return matchingAuctions;
-        }catch(RollbackException exception){
-            throw new ClientErrorException(409);
-        }catch(IllegalArgumentException exception){
+        } catch (IllegalArgumentException exception) {
             throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
         } finally {
             if (!getEM().getTransaction().isActive())
                 getEM().getTransaction().begin();
@@ -100,19 +95,19 @@ public class AuctionService {
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @Path("{identity}")
     //Returns the auction matching the given identity
-    public Auction getAuction(@PathParam("identity") long auctionIdentity,  @HeaderParam("Authorization") String authString) {
+    public Auction getAuction(@PathParam("identity") long auctionIdentity, @HeaderParam("Authorization") String authString) {
         try {
-            Person person = authenticate(authString);
+            LifeCycleProvider.authenticate(authString);
             Auction auction = getEM().find(Auction.class, auctionIdentity);
-            if (auction == null){
+            if (auction == null) {
                 throw new ClientErrorException(404);
-            }else{
+            } else {
                 return auction;
             }
-        }catch(RollbackException exception){
-            throw new ClientErrorException(409);
-        }catch(IllegalArgumentException exception){
+        } catch (IllegalArgumentException exception) {
             throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
         } finally {
             if (!getEM().getTransaction().isActive())
                 getEM().getTransaction().begin();
@@ -122,9 +117,12 @@ public class AuctionService {
     @PUT
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Creates or modifies an auction from the given template data. Note that an auction may only be modified as long as it is not sealed (i.e. is open and still without bids).
-    public void setAuction(Auction auctionTemplate, @HeaderParam("Authorization") String authString) {
-        authenticate(authString);
+    public void setAuction(@Valid @NotNull Auction auctionTemplate, @HeaderParam("Authorization") String authString) {
         try {
+            Person requester = LifeCycleProvider.authenticate(authString);
+            if (requester.getIdentity() != auctionTemplate.getSellerReference() && !requester.getGroup().equals(Person.Group.ADMIN)) {
+                throw new ClientErrorException(403);
+            }
             Auction auction = getEM().find(Auction.class, auctionTemplate.getIdentity());
             if (auction == null) {
                 getEM().persist(auctionTemplate);
@@ -137,11 +135,15 @@ public class AuctionService {
                 auction.setDescription(auctionTemplate.getDescription());
                 auction.setUnitCount(auctionTemplate.getUnitCount());
                 getEM().flush();
+            } else {
+                throw new ClientErrorException(403);
             }
-        }catch(RollbackException exception){
-            throw new ClientErrorException(409);
-        }catch(IllegalArgumentException exception){
+        } catch (IllegalArgumentException exception) {
             throw new ClientErrorException(400);
+        } catch (NotAuthorizedException exception) {
+            throw new ClientErrorException(401);
+        } catch (RollbackException exception) {
+            throw new ClientErrorException(409);
         } finally {
             Cache cache = getEM().getEntityManagerFactory().getCache();
             cache.evict(auctionTemplate.getSeller().getClass(), auctionTemplate.getSeller().getIdentity());
@@ -150,5 +152,3 @@ public class AuctionService {
         }
     }
 }
-
-
