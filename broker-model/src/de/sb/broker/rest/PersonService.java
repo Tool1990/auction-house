@@ -242,6 +242,8 @@ public class PersonService {
         }
     }
 
+    @Bid.XmlBidderAsReferenceFilter
+    @Bid.XmlBidderAsEntityFilter
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @Path("{identity}/bids")

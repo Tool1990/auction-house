@@ -21,6 +21,8 @@ import java.util.List;
 @Path("auctions")
 public class AuctionService {
 
+
+
     private EntityManager getEM() {
         return LifeCycleProvider.brokerManager();
     }
@@ -37,6 +39,7 @@ public class AuctionService {
             "(:closureMin is null or a.closureTimestamp >= :closureMin) and " +
             "(:closureMax is null or a.closureTimestamp <= :closureMax)";
 
+    @Auction.XmlSellerAsEntityFilter
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     //Returns the auctions matching the given criteria, with null or missing parameters identifying omitted criteria.
@@ -92,6 +95,7 @@ public class AuctionService {
         }
     }
 
+    @Auction.XmlSellerAsReferenceFilter
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @Path("{identity}")
@@ -115,6 +119,8 @@ public class AuctionService {
         }
     }
 
+    @Bid.XmlBidderAsReferenceFilter
+    @Bid.XmlAuctionAsReferenceFilter
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     @Path("{identity}/bid")
