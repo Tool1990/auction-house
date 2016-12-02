@@ -1,4 +1,4 @@
-package sb.broker.rest;
+package de.sb.broker.rest;
 
 import java.io.BufferedReader;
 import java.io.IOException;
