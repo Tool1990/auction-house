@@ -16,181 +16,177 @@ import java.lang.annotation.Target;
 import java.util.HashSet;
 import java.util.Set;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @Entity
 @Table(name = "Auction", schema = "broker")
 @DiscriminatorValue(value = "Auction")
 @PrimaryKeyJoinColumn(name = "auctionIdentity")
-@XmlType
-@XmlRootElement
 @Inequal(leftAccessPath = "closureTimestamp", rightAccessPath = "creationTimestamp", operator = Inequal.Operator.GREATER)
 public class Auction extends BaseEntity {
 
-    @Column(nullable = false, updatable = true, insertable = true)
-    @NotNull
-    @Size(min = 1, max = 255)
-    @XmlElement
-    private String title;
+	@Column(nullable = false, updatable = true, insertable = true)
+	@NotNull
+	@Size(min = 1, max = 255)
+	@XmlElement
+	private String title;
 
-    @Column(nullable = false, updatable = true, insertable = true)
-    @Min(1)
-    @XmlElement
-    private short unitCount;
-
-
-    @Column(nullable = false, updatable = true, insertable = true)
-    @Min(1)
-    @XmlElement
-    private long askingPrice;
-
-    @Column(nullable = false, updatable = true, insertable = true)
-    @XmlElement
-    private long closureTimestamp;
-
-    @Column(nullable = false, updatable = true, insertable = true)
-    @NotNull
-    @Size(min = 1, max = 8189)
-    @XmlElement
-    private String description;
-
-    @ManyToOne(cascade = CascadeType.REMOVE)
-    @JoinColumn(name = "sellerReference")
-    private Person seller;
+	@Column(nullable = false, updatable = true, insertable = true)
+	@Min(1)
+	@XmlElement
+	private short unitCount;
 
 
-    @OneToMany(mappedBy = "auction")
-    private Set<Bid> bids;
+	@Column(nullable = false, updatable = true, insertable = true)
+	@Min(1)
+	@XmlElement
+	private long askingPrice;
 
-    public Auction(Person seller) {
-        super();
+	@Column(nullable = false, updatable = true, insertable = true)
+	@XmlElement
+	private long closureTimestamp;
 
-        this.title = "";
-        this.unitCount = 1;
-        this.askingPrice = 1;
-        this.closureTimestamp = System.currentTimeMillis();
-        this.description = "";
-        this.seller = seller;
-        bids = new HashSet<>();
-    }
+	@Column(nullable = false, updatable = true, insertable = true)
+	@NotNull
+	@Size(min = 1, max = 8189)
+	@XmlElement
+	private String description;
 
-    public Auction() {
-        this(null);
-    }
+	@ManyToOne(cascade = CascadeType.REMOVE)
+	@JoinColumn(name = "sellerReference")
+	private Person seller;
 
+	@OneToMany(mappedBy = "auction")
+	private Set<Bid> bids;
 
-    @XmlSellerAsReferenceFilter
-    public long getSellerReference() {
-        return seller == null ? 0 : seller.getIdentity();
-    }
+	public Auction(Person seller) {
+		super();
 
-    @XmlElement(name = "closed")
-    public boolean isClosed() {
-        return System.currentTimeMillis() > closureTimestamp ? true : false;
-    }
+		this.title = "";
+		this.unitCount = 1;
+		this.askingPrice = 1;
+		this.closureTimestamp = System.currentTimeMillis();
+		this.description = "";
+		this.seller = seller;
+		bids = new HashSet<>();
+	}
 
-    @XmlElement(name = "sealed")
-    public boolean isSealed() {
-        return !bids.isEmpty() || isClosed();
-    }
+	public Auction() {
+		this(null);
+	}
 
-    public Bid getBid(Person bidder) {
-        for (Bid bid : bids) {
-            if (bid.getBidder().equals(bidder)) {
-                return bid;
-            }
-        }
-        return null;
-    }
+	@XmlElement(name = "closed")
+	public boolean isClosed() {
+		return System.currentTimeMillis() > closureTimestamp ? true : false;
+	}
 
-    public String getTitle() {
-        return title;
-    }
+	@XmlElement(name = "sealed")
+	public boolean isSealed() {
+		return !bids.isEmpty() || isClosed();
+	}
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+	public Bid getBid(Person bidder) {
+		for (Bid bid : bids) {
+			if (bid.getBidder().equals(bidder)) {
+				return bid;
+			}
+		}
+		return null;
+	}
 
-    public short getUnitCount() {
-        return unitCount;
-    }
+	public String getTitle() {
+		return title;
+	}
 
-    public void setUnitCount(short unitCount) {
-        this.unitCount = unitCount;
-    }
+	public void setTitle(String title) {
+		this.title = title;
+	}
 
-    public long getAskingPrice() {
-        return askingPrice;
-    }
+	public short getUnitCount() {
+		return unitCount;
+	}
 
-    public void setAskingPrice(long askingPrice) {
-        this.askingPrice = askingPrice;
-    }
+	public void setUnitCount(short unitCount) {
+		this.unitCount = unitCount;
+	}
 
-    public long getClosureTimestamp() {
-        return closureTimestamp;
-    }
+	public long getAskingPrice() {
+		return askingPrice;
+	}
 
-    public void setClosureTimestamp(long closureTimestamp) {
-        this.closureTimestamp = closureTimestamp;
-    }
+	public void setAskingPrice(long askingPrice) {
+		this.askingPrice = askingPrice;
+	}
 
-    public String getDescription() {
-        return description;
-    }
+	public long getClosureTimestamp() {
+		return closureTimestamp;
+	}
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+	public void setClosureTimestamp(long closureTimestamp) {
+		this.closureTimestamp = closureTimestamp;
+	}
 
-    @XmlBidsAsEntityFilter
-    public Set<Bid> getBids() {
-        return bids;
-    }
+	public String getDescription() {
+		return description;
+	}
 
-    @XmlElement
-    @XmlSellerAsEntityFilter
-    public Person getSeller() {
-        return seller;
-    }
+	public void setDescription(String description) {
+		this.description = description;
+	}
 
-    /**
-     * Filter annotation for associated sellers marshaled as entities.
-     */
-    @Target({TYPE, METHOD, FIELD})
-    @Retention(RUNTIME)
-    @EntityFiltering
-    @SuppressWarnings("all")
-    static public @interface XmlSellerAsEntityFilter {
-        static final class Literal extends AnnotationLiteral<XmlSellerAsEntityFilter> implements XmlSellerAsEntityFilter {
-        }
-    }
+	@XmlElement
+	@XmlBidsAsEntityFilter
+	public Set<Bid> getBids() {
+		return bids;
+	}
 
-    /**
-     * Filter annotation for associated sellers marshaled as references.
-     */
-    @Target({TYPE, METHOD, FIELD})
-    @Retention(RUNTIME)
-    @EntityFiltering
-    @SuppressWarnings("all")
-    static public @interface XmlSellerAsReferenceFilter {
-        static final class Literal extends AnnotationLiteral<XmlSellerAsReferenceFilter> implements XmlSellerAsReferenceFilter {
-        }
-    }
+	@XmlElement
+	@XmlSellerAsEntityFilter
+	public Person getSeller() {
+		return seller;
+	}
 
-    /**
-     * Filter annotation for associated bids marshaled as entities.
-     */
-    @Target({TYPE, METHOD, FIELD})
-    @Retention(RUNTIME)
-    @EntityFiltering
-    @SuppressWarnings("all")
-    static public @interface XmlBidsAsEntityFilter {
-        static final class Literal extends AnnotationLiteral<XmlBidsAsEntityFilter> implements XmlBidsAsEntityFilter {
-        }
-    }
+	@XmlElement
+	@XmlSellerAsReferenceFilter
+	public long getSellerReference() {
+		return seller == null ? 0 : seller.getIdentity();
+	}
+
+	/**
+	 * Filter annotation for associated sellers marshaled as entities.
+	 */
+	@Target({TYPE, METHOD, FIELD})
+	@Retention(RUNTIME)
+	@EntityFiltering
+	@SuppressWarnings("all")
+	static public @interface XmlSellerAsEntityFilter {
+		static final class Literal extends AnnotationLiteral<XmlSellerAsEntityFilter> implements XmlSellerAsEntityFilter {
+		}
+	}
+
+	/**
+	 * Filter annotation for associated sellers marshaled as references.
+	 */
+	@Target({TYPE, METHOD, FIELD})
+	@Retention(RUNTIME)
+	@EntityFiltering
+	@SuppressWarnings("all")
+	static public @interface XmlSellerAsReferenceFilter {
+		static final class Literal extends AnnotationLiteral<XmlSellerAsReferenceFilter> implements XmlSellerAsReferenceFilter {
+		}
+	}
+
+	/**
+	 * Filter annotation for associated bids marshaled as entities.
+	 */
+	@Target({TYPE, METHOD, FIELD})
+	@Retention(RUNTIME)
+	@EntityFiltering
+	@SuppressWarnings("all")
+	static public @interface XmlBidsAsEntityFilter {
+		static final class Literal extends AnnotationLiteral<XmlBidsAsEntityFilter> implements XmlBidsAsEntityFilter {
+		}
+	}
 
 }

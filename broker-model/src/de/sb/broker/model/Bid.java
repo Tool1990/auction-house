@@ -7,8 +7,6 @@ import javax.enterprise.util.AnnotationLiteral;
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -19,8 +17,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Table(name = "Bid", schema = "broker", uniqueConstraints = @UniqueConstraint(columnNames = {"bidderReference", "auctionReference"}))
 @DiscriminatorValue(value = "Bid")
 @PrimaryKeyJoinColumn(name = "bidIdentity")
-@XmlType
-@XmlRootElement
 @Inequal(leftAccessPath = {"auction", "seller", "identity"}, rightAccessPath = {"bidder", "identity"}, operator = Inequal.Operator.NOT_EQUAL)
 //@Inequal(leftAccessPath = "price", rightAccessPath = {"auction", "askingPrice"}, operator = Inequal.Operator.GREATER)
 public class Bid extends BaseEntity {
@@ -50,11 +46,6 @@ public class Bid extends BaseEntity {
 		this(null, null);
 	}
 
-	@XmlAuctionAsEntityFilter
-	public Auction getAuction() {
-		return auction;
-	}
-
 	public long getPrice() {
 		return price;
 	}
@@ -63,16 +54,25 @@ public class Bid extends BaseEntity {
 		this.price = price;
 	}
 
+	@XmlElement
+	@XmlAuctionAsEntityFilter
+	public Auction getAuction() {
+		return auction;
+	}
+
+	@XmlElement
 	@XmlBidderAsEntityFilter
 	public Person getBidder() {
 		return bidder;
 	}
 
+	@XmlElement
 	@XmlAuctionAsReferenceFilter
 	public long getAuctionReference() {
 		return auction == null ? 0 : auction.getIdentity();
 	}
 
+	@XmlElement
 	@XmlBidderAsReferenceFilter
 	public long getBidderReference() {
 		return bidder == null ? 0 : bidder.getIdentity();

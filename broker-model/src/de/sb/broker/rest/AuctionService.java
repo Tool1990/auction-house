@@ -22,7 +22,6 @@ import java.util.*;
 @Path("auctions")
 public class AuctionService {
 
-
 	private EntityManager getEM() {
 		return LifeCycleProvider.brokerManager();
 	}
@@ -39,9 +38,9 @@ public class AuctionService {
 			"(:closureMin is null or a.closureTimestamp >= :closureMin) and " +
 			"(:closureMax is null or a.closureTimestamp <= :closureMax)";
 
-	@Auction.XmlSellerAsEntityFilter
 	@GET
 	@Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+	@Auction.XmlSellerAsEntityFilter
 	//Returns the auctions matching the given criteria, with null or missing parameters identifying omitted criteria.
 	public Response getAuctions(
 			@Min(0) @QueryParam("firstResult") int firstResult,
@@ -57,8 +56,7 @@ public class AuctionService {
 			@Min(1) @QueryParam("closureMin") Long closureMin,
 			@Min(1) @QueryParam("closureMax") Long closureMax,
 			@QueryParam("closed") Boolean closed,
-			@HeaderParam("Authorization") String authString
-	) {
+			@HeaderParam("Authorization") String authString) {
 		try {
 			LifeCycleProvider.authenticate(authString);
 			Query q = getEM().createQuery(SQL_AUCTIONS);
@@ -88,7 +86,7 @@ public class AuctionService {
 			List<Annotation> filterAnnotations = new ArrayList<>();
 
 			if (closed == Boolean.TRUE) {
-				for (Iterator<Auction> iterator = auctions.iterator(); iterator.hasNext();) {
+				for (Iterator<Auction> iterator = auctions.iterator(); iterator.hasNext(); ) {
 					if (!iterator.next().isClosed()) {
 						iterator.remove();
 					}
@@ -96,16 +94,20 @@ public class AuctionService {
 
 				filterAnnotations.add(new Auction.XmlBidsAsEntityFilter.Literal());
 				filterAnnotations.add(new Bid.XmlBidderAsEntityFilter.Literal());
+				filterAnnotations.add(new Bid.XmlAuctionAsReferenceFilter.Literal());
 			} else if (closed == Boolean.FALSE) {
-				for (Iterator<Auction> iterator = auctions.iterator(); iterator.hasNext();) {
-					if (iterator.next().isClosed()){
+				for (Iterator<Auction> iterator = auctions.iterator(); iterator.hasNext(); ) {
+					if (iterator.next().isClosed()) {
 						iterator.remove();
 					}
 				}
 			}
 
-			Collections.sort(auctions, Comparator.comparing(Auction::getTitle));
-			GenericEntity<?> wrapper = new GenericEntity<Collection<Auction>>(auctions) {};
+			Collections.sort(auctions, Comparator.comparing(Auction::getClosureTimestamp)
+					.thenComparing(Auction::getCreationTimestamp)
+					.thenComparing(Auction::getIdentity));
+			GenericEntity<?> wrapper = new GenericEntity<Collection<Auction>>(auctions) {
+			};
 
 			return Response.ok().entity(wrapper, filterAnnotations.toArray(new Annotation[0])).build();
 		} catch (IllegalArgumentException exception) {
@@ -118,17 +120,20 @@ public class AuctionService {
 		}
 	}
 
-	@Auction.XmlSellerAsReferenceFilter
 	@GET
 	@Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
 	@Path("{identity}")
+	@Auction.XmlSellerAsReferenceFilter
 	//Returns the auction matching the given identity
-	public Auction getAuction(@PathParam("identity") long auctionIdentity, @HeaderParam("Authorization") String authString) {
+	public Auction getAuction(
+			@PathParam("identity") long auctionIdentity,
+			@HeaderParam("Authorization") String authString) {
 		try {
 			LifeCycleProvider.authenticate(authString);
 			Auction auction = getEM().find(Auction.class, auctionIdentity);
 			if (auction == null) {
 				throw new ClientErrorException(404);
+
 			} else {
 				return auction;
 			}
@@ -142,11 +147,11 @@ public class AuctionService {
 		}
 	}
 
-	@Bid.XmlBidderAsReferenceFilter
-	@Bid.XmlAuctionAsReferenceFilter
 	@GET
 	@Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-	@Path("{identity}/bid")
+	@Path("{identity}/bids")
+	@Bid.XmlBidderAsReferenceFilter
+	@Bid.XmlAuctionAsReferenceFilter
 	//Returns the requesters bid for the auction matching the given identity
 	public Bid getBid(@PathParam("identity") long auctionIdentity, @HeaderParam("Authorization") String authString) {
 		try {
@@ -207,7 +212,7 @@ public class AuctionService {
 
 	@POST
 	@Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-	@Path("{identity}/bid")
+	@Path("{identity}/bids")
 	//Creates or modifies the requesters bid for the given auction
 	public void setBid(
 			@PathParam("identity") long auctionIdentity,

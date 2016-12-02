@@ -162,6 +162,7 @@ public class PersonService {
 						auctions.add(bid.getAuction());
 					}
 				}
+
 				filterAnnotations.add(new Auction.XmlSellerAsEntityFilter.Literal());
 			} else {
 				auctions.addAll(person.getAuctions());
@@ -175,8 +176,11 @@ public class PersonService {
 				filterAnnotations.add(new Auction.XmlSellerAsEntityFilter.Literal());
 			}
 
-			Collections.sort(auctions, Comparator.comparing(Auction::getTitle));
-			GenericEntity<?> wrapper = new GenericEntity<Collection<Auction>>(auctions){};
+			Collections.sort(auctions, Comparator.comparing(Auction::getClosureTimestamp)
+					.thenComparing(Auction::getCreationTimestamp)
+					.thenComparing(Auction::getIdentity));
+			GenericEntity<?> wrapper = new GenericEntity<Collection<Auction>>(auctions) {
+			};
 
 			return Response.ok().entity(wrapper, filterAnnotations.toArray(new Annotation[0])).build();
 		} catch (IllegalArgumentException exception) {
@@ -196,14 +200,15 @@ public class PersonService {
 		try {
 			LifeCycleProvider.authenticate(authString);
 			Person person = getEM().find(Person.class, personIdentity);
+
 			if (person == null) {
 				throw new ClientErrorException(404);
 			}
+
 			Document avatar = person.getAvatar();
 			//respone with no content if avatar null else response with avatar content
-			Response res = avatar == null ? Response.noContent().build() : Response.ok(avatar.getContent(), avatar.getType()).build();
 
-			return res;
+			return avatar == null ? Response.noContent().build() : Response.ok(avatar.getContent(), avatar.getType()).build();
 		} catch (IllegalArgumentException exception) {
 			throw new ClientErrorException(400);
 		} catch (NotAuthorizedException exception) {
@@ -227,29 +232,31 @@ public class PersonService {
 		try {
 			Person requester = LifeCycleProvider.authenticate(authString);
 			person = getEM().find(Person.class, personIdentity);
+
 			if (person == null) {
 				throw new ClientErrorException(404);
 			}
 			if (requester.getIdentity() != personIdentity && !requester.getGroup().equals(Person.Group.ADMIN)) {
 				throw new ClientErrorException(403);
 			}
-			byte[] docHash = Document.getHash(documentContent);
+			byte[] documentHash = Document.getHash(documentContent);
 			TypedQuery query = getEM().createQuery(SQL_AVATAR, Document.class);
-			query.setParameter("docHash", docHash);
+			query.setParameter("docHash", documentHash);
 			List<Long> result = query.getResultList();
-			Document doc;
+			Document document;
+
 			if (result.size() == 1) {
-				doc = getEM().find(Document.class, result.get(0));
-				doc.setType(contentType);
+				document = getEM().find(Document.class, result.get(0));
+				document.setType(contentType);
 				getEM().flush();
 			} else {
-				doc = new Document(contentType, documentContent);
-				getEM().persist(doc);
+				document = new Document(contentType, documentContent);
+				getEM().persist(document);
 			}
 			getEM().getTransaction().commit();
 			getEM().getTransaction().begin();
-			person.setAvatar(doc);
-			getEM().flush();
+			person.setAvatar(document);
+			getEM().getTransaction().commit();
 		} catch (IllegalArgumentException exception) {
 			throw new ClientErrorException(400);
 		} catch (NotAuthorizedException exception) {
@@ -276,18 +283,19 @@ public class PersonService {
 		try {
 			Person requester = LifeCycleProvider.authenticate(authString);
 			Person person = getEM().find(Person.class, personIdentity);
+
 			if (person == null) {
 				throw new ClientErrorException(404);
 			}
-			Collection<Bid> resultList = person.getBids();
-			List<Bid> matchingBidsList = new ArrayList<>();
+			Set<Bid> matchingBidsList = new HashSet<>();
 
-			for (Bid bid : resultList) {
+			for (Bid bid : person.getBids()) {
 				Auction auction = bid.getAuction();
 				if (auction.isClosed() || requester.getIdentity() == personIdentity) {
 					matchingBidsList.add(bid);
 				}
 			}
+
 			Bid[] bids = matchingBidsList.toArray(new Bid[0]);
 			Arrays.sort(bids, Comparator.comparing(Bid::getPrice));
 			return bids;
@@ -308,15 +316,14 @@ public class PersonService {
 	public long setPerson(
 			@Valid @NotNull Person personTemplate,
 			@HeaderParam("Set-password") String newPassword,
-			@HeaderParam("Authorization") String authString
-	) {
-
+			@HeaderParam("Authorization") String authString) {
 		try {
 			Person requester = LifeCycleProvider.authenticate(authString);
 			if ((requester.getIdentity() != personTemplate.getIdentity() || personTemplate.getGroup().equals(Person.Group.ADMIN))
 					&& !requester.getGroup().equals(Person.Group.ADMIN)) {
 				throw new ClientErrorException(403);
 			}
+
 			long identity;
 			Person person = getEM().find(Person.class, personTemplate.getIdentity());
 

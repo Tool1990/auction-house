@@ -2,20 +2,19 @@ package de.sb.broker.model;
 
 import javax.persistence.*;
 import javax.validation.constraints.Min;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 @Entity
-@Table(name="BaseEntity", schema = "broker")
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.NONE)
+@XmlType
+@Table(name = "BaseEntity", schema = "broker")
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "discriminator", discriminatorType = DiscriminatorType.STRING)
-@XmlAccessorType(XmlAccessType.NONE)
 @XmlSeeAlso({Person.class, Auction.class, Bid.class, Document.class})
-public abstract class BaseEntity implements Comparable<BaseEntity>{
+public abstract class BaseEntity implements Comparable<BaseEntity> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,30 +29,33 @@ public abstract class BaseEntity implements Comparable<BaseEntity>{
 	@Column(nullable = false)
 	@XmlElement
 	private long creationTimestamp;
-	
-	public BaseEntity(){
-		this.version=1;
-		this.creationTimestamp=System.currentTimeMillis();
+
+	public BaseEntity() {
+		this.version = 1;
+		this.creationTimestamp = System.currentTimeMillis();
 	}
-	
-	public int compareTo(BaseEntity e){
+
+	public int compareTo(BaseEntity e) {
 		return Long.compare(this.identity, e.identity);
 	}
-	
+
 	public int getVersion() {
 		return version;
 	}
+
 	public void setVersion(int version) {
 		this.version = version;
 	}
+
 	public long getIdentity() {
 		return identity;
 	}
+
 	public long getCreationTimestamp() {
 		return creationTimestamp;
 	}
 
-	static public byte[] getHash(byte[] bytes){
+	static public byte[] getHash(byte[] bytes) {
 		MessageDigest messageDigest = null;
 		try {
 			messageDigest = MessageDigest.getInstance("SHA-256");
