@@ -1,9 +1,9 @@
 package de.sb.broker.model;
 
 import de.sb.java.validation.Inequal;
-import org.glassfish.hk2.api.AnnotationLiteral;
 import org.glassfish.jersey.message.filtering.EntityFiltering;
 
+import javax.enterprise.util.AnnotationLiteral;
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -77,7 +77,7 @@ public class Auction extends BaseEntity {
         bids = new HashSet<>();
     }
 
-    protected Auction() {
+    public Auction() {
         this(null);
     }
 

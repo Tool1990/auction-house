@@ -1,5 +1,7 @@
 package de.sb.broker.model;
 
+import org.eclipse.persistence.annotations.CacheIndex;
+
 import javax.persistence.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -23,6 +25,7 @@ public class Person extends BaseEntity {
     @NotNull
     @Size(min = 1, max = 16)
     @XmlElement
+    @CacheIndex(updateable = true)
     private String alias;
 
     @Column(nullable = false)
