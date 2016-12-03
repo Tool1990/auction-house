@@ -53,11 +53,11 @@ public class Auction extends BaseEntity {
 	@XmlElement
 	private String description;
 
-	@ManyToOne(cascade = CascadeType.REMOVE)
+	@ManyToOne
 	@JoinColumn(name = "sellerReference")
 	private Person seller;
 
-	@OneToMany(mappedBy = "auction")
+	@OneToMany(mappedBy = "auction", cascade = CascadeType.REMOVE)
 	private Set<Bid> bids;
 
 	public Auction(Person seller) {

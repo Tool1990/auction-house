@@ -26,11 +26,11 @@ public class Bid extends BaseEntity {
 	@XmlElement
 	private long price;
 
-	@ManyToOne(cascade = CascadeType.REMOVE)
+	@ManyToOne
 	@JoinColumn(name = "auctionReference")
 	private Auction auction;
 
-	@ManyToOne(cascade = CascadeType.REMOVE)
+	@ManyToOne
 	@JoinColumn(name = "bidderReference")
 	private Person bidder;
 
@@ -43,7 +43,6 @@ public class Bid extends BaseEntity {
 	}
 
 	public Bid() {
-		this(null, null);
 	}
 
 	public long getPrice() {

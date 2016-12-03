@@ -1,14 +1,9 @@
 package de.sb.broker.rest;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
-import java.io.FilterOutputStream;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import de.sb.broker.model.Person;
+import de.sb.java.Copyright;
+import de.sb.java.net.HttpAuthenticationCodec;
+
 import javax.persistence.*;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.NotAuthorizedException;
@@ -20,11 +15,16 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import de.sb.broker.model.Person;
-import de.sb.java.Copyright;
-import de.sb.java.net.HttpAuthenticationCodec;
-
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 /**
  * This life-cycle provider is a singleton adapter and deploys the following services for REST
@@ -49,20 +49,20 @@ import de.sb.java.net.HttpAuthenticationCodec;
  * broken in some environments, but works nicely in most, like Jersey.
  */
 @Provider
-@Copyright(year=2013, holders="Sascha Baumeister")
+@Copyright(year = 2013, holders = "Sascha Baumeister")
 public class LifeCycleProvider implements ContainerRequestFilter, ContainerResponseFilter, ExceptionMapper<Throwable> {
 	static private volatile EntityManagerFactory BROKER_FACTORY;
 	static private final ThreadLocal<EntityManager> BROKER_THREAD_LOCAL = new ThreadLocal<>();
 	static private final Object MONITOR = new Object();
 	static private final String PERSON_BY_ALIAS = "select p from Person as p where p.alias = :alias";
 
-
 	/**
 	 * Returns the (lazy initialized) broker factory.
+	 *
 	 * @return the entity manager factory
 	 * @throws RuntimeException if there is a problem configuring the factory
 	 */
-	static private EntityManagerFactory brokerFactory () throws RuntimeException {
+	static private EntityManagerFactory brokerFactory() throws RuntimeException {
 		synchronized (MONITOR) {
 			if (BROKER_FACTORY == null) {
 				BROKER_FACTORY = Persistence.createEntityManagerFactory("broker");
@@ -71,39 +71,39 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 		return BROKER_FACTORY;
 	}
 
-
 	/**
 	 * Returns the broker manager associated with the current thread.
+	 *
 	 * @return the entity manager
 	 * @throws IllegalStateException if there is no entity manager associated with the current
-	 *         thread
+	 *                               thread
 	 */
-	static public EntityManager brokerManager () throws IllegalStateException {
+	static public EntityManager brokerManager() throws IllegalStateException {
 		final EntityManager entityManager = BROKER_THREAD_LOCAL.get();
 		if (entityManager == null) throw new IllegalStateException();
 		return entityManager;
 	}
-
 
 	/**
 	 * Returns the authenticated requester (a person) for the given RFC 2617 "Basic" authentication.
 	 * This operation first decodes user alias and password from an authentication value. Then an
 	 * SHA-256 hash-code is calculated for the password. Finally, the latter is used in conjunction
 	 * with the user alias to query and return a suitable Person entity from the database.
+	 *
 	 * @param authentication the HTTP Basic "Authorization" header value, or {@code null} for none
 	 * @return the authenticated requestor
-	 * @throws ClientErrorException (HTTP 400) if the given HTTP Basic "Authorization" header is
-	 *         malformed
-	 * @throws ClientErrorException (HTTP 401) if authentication is lacking or invalid
-	 * @throws PersistenceException (HTTP 500) if there is a problem with the persistence layer
+	 * @throws ClientErrorException  (HTTP 400) if the given HTTP Basic "Authorization" header is
+	 *                               malformed
+	 * @throws ClientErrorException  (HTTP 401) if authentication is lacking or invalid
+	 * @throws PersistenceException  (HTTP 500) if there is a problem with the persistence layer
 	 * @throws IllegalStateException (HTTP 500) if the entity manager associated with the current
-	 *         thread is not open
+	 *                               thread is not open
 	 * @see HttpAuthenticationCodec#decode(String)
 	 */
-	static public Person authenticate (final String authentication) throws ClientErrorException, NotAuthorizedException, PersistenceException, IllegalStateException {
+	static public Person authenticate(final String authentication) throws ClientErrorException, PersistenceException, IllegalStateException {
 		if (authentication == null) throw new NotAuthorizedException("Basic");
 
-		final Map<String,String> credentials;
+		final Map<String, String> credentials;
 		try {
 			credentials = HttpAuthenticationCodec.decode(authentication);
 		} catch (final IllegalArgumentException exception) {
@@ -121,44 +121,43 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 		// that this exception type is a specialized Subclass of ClientErrorException that is capable of storing a
 		// challenge, in this case for Basic Authorization.
 
-
 		TypedQuery<Person> q = brokerManager().createQuery(PERSON_BY_ALIAS, Person.class);
 		List<Person> resultlist = q.setParameter("alias", username).getResultList();
 		Person person = null;
 		if (resultlist.size() > 0)
 			person = resultlist.get(0);
-		if (person == null ){
+		if (person == null) {
 			throw new NotAuthorizedException("Basic");
-		}else {
+		} else {
 			if (Arrays.toString(person.getPasswordHash()).equals(Arrays.toString(Person.getHash(password.getBytes())))) {
 				return person;
-			}else {
+			} else {
 				throw new NotAuthorizedException("Basic", 401);
 			}
 		}
 	}
 
-
 	/**
 	 * Creates a new instance, and forces entity manager factory initialization if it has not
 	 * happened yet.
+	 *
 	 * @throws RuntimeException if there is a problem configuring a persistence unit
 	 */
-	public LifeCycleProvider () throws RuntimeException {
+	public LifeCycleProvider() throws RuntimeException {
 		brokerFactory();
 	}
-
 
 	/**
 	 * Maps the given exception to a HTTP response. In case of a WebApplicationException instance,
 	 * it's associated response is returned. Otherwise, a generic HTTP 500 response is returned. In
 	 * all cases the exception is logged if it indicates a server side problem. Note that this
 	 * operation is designed to be called by the JAX-RS runtime, not for use within REST services.
+	 *
 	 * @param exception the exception to be mapped
 	 * @return the mapped response
 	 * @throws NullPointerException if the given argument is {@code null}
 	 */
-	public Response toResponse (final Throwable exception) throws NullPointerException {
+	public Response toResponse(final Throwable exception) throws NullPointerException {
 		final Response response = exception instanceof WebApplicationException
 				? ((WebApplicationException) exception).getResponse()
 				: Response.status(INTERNAL_SERVER_ERROR).build();
@@ -167,20 +166,19 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 		return response;
 	}
 
-
 	/**
 	 * This operation is executed before an HTTP request is processed. It creates a new tournament
 	 * entity manager and stores it within a thread local variable, for access by any component
 	 * working within the same thread. Note that this operation is designed to be called by the
 	 * JAX-RS runtime, not for use within REST services.
+	 *
 	 * @param requestContext the (optional) JAX-RS request context
 	 */
-	public void filter (final ContainerRequestContext requestContext) {
+	public void filter(final ContainerRequestContext requestContext) {
 		final EntityManager entityManager = brokerFactory().createEntityManager();
 		entityManager.getTransaction().begin();
 		BROKER_THREAD_LOCAL.set(entityManager);
 	}
-
 
 	/**
 	 * This operation executes after an HTTP request has been processed, but before the entity
@@ -191,13 +189,14 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 	 * entity stream (rather, the decorator wrapping it) being closed regardless of the presence of
 	 * absence of a response entity; in other words, we must rely on correct resource management by
 	 * the JAX-RS implementation.
-	 * @param requestContext the JAX-RS request context
+	 *
+	 * @param requestContext  the JAX-RS request context
 	 * @param responseContext the JAX-RS response context
 	 * @throws NullPointerException if any of the given arguments is {@code null}
 	 */
-	public void filter (final ContainerRequestContext requestContext, final ContainerResponseContext responseContext) throws NullPointerException {
+	public void filter(final ContainerRequestContext requestContext, final ContainerResponseContext responseContext) throws NullPointerException {
 		final FilterOutputStream triggerStream = new FilterOutputStream(responseContext.getEntityStream()) {
-			public void close () throws IOException {
+			public void close() throws IOException {
 				try {
 					super.close();
 				} finally {
@@ -217,14 +216,14 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 		responseContext.setEntityStream(triggerStream);
 	}
 
-
 	/**
 	 * Returns the log level appropriate for the given HTTP response status.
+	 *
 	 * @param status the HTTP response status
 	 * @return the log level
 	 * @throws NullPointerException if the given status is {@code null}
 	 */
-	static private Level logLevel (final Response.StatusType status) throws NullPointerException {
+	static private Level logLevel(final Response.StatusType status) throws NullPointerException {
 		switch (status.getFamily()) {
 			case SERVER_ERROR:
 				return Level.WARNING;
