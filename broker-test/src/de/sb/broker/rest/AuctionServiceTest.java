@@ -4,8 +4,11 @@ import de.sb.broker.model.Auction;
 import de.sb.broker.model.Person;
 import org.junit.Test;
 
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.xml.bind.JAXBException;
 
 import static org.junit.Assert.*;
 
@@ -24,8 +27,37 @@ public class AuctionServiceTest extends ServiceTest {
     static private final String USER_INES = "ines";
     static private final String PASSWORD_INES = "ines";
 
+
     @Test
-     public void testGetAuction() {
+    public void testCriteriaQueries() throws JAXBException {
+        WebTarget webTarget = newWebTarget(USER_INES, "").path("auctions");
+        assertEquals(webTarget.request().get().getStatus(), RESPONSE_CODE_401);
+
+        webTarget = newWebTarget(USER_INES, PASSWORD_INES).path("auctions");
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("offset", -1).request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("limit", -1).request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("title", "").request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("title", new String(new char[256])).request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("description", "").request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("description", new String(new char[8190])).request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("minimum-price", 0).request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("maximum-price", 0).request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("minimum-count", 0).request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("maximum-count", 0).request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("minimum-creation", 0).request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("maximum-creation", 0).request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("minimum-closure", 0).request().get().getStatus());
+        assertEquals(RESPONSE_CODE_400, webTarget.queryParam("maximum-closure", 0).request().get().getStatus());
+
+        assertEquals(RESPONSE_CODE_200, webTarget.request(MediaType.APPLICATION_JSON).get().getStatus());
+        //assertEquals(RESPONSE_CODE_200, webTarget.request(MediaType.APPLICATION_XML).get().getStatus());
+
+//        List<Auction> auctions = webTarget.request().get().readEntity(???);
+//        assertFalse(auctions.isEmpty());
+    }
+
+    @Test
+    public void testGetAuction() {
         WebTarget webTarget = newWebTarget(USER_INES, "");
         Response response = webTarget.path("auctions/1").request().get();
         assertEquals(RESPONSE_CODE_401, response.getStatus());
@@ -36,25 +68,39 @@ public class AuctionServiceTest extends ServiceTest {
 
         response = webTarget.path("auctions/3").request().get();
         assertEquals(RESPONSE_CODE_200, response.getStatus());
+        Auction auction = response.readEntity(Auction.class);
+        assertEquals(3, auction.getIdentity());
 
     }
 
     public Person getRequester(WebTarget webTarget) {
-        Person requester = (Person) webTarget.path("people/requester").request().get().getEntity();
+        Person requester = webTarget.path("people/requester").request().get().readEntity(Person.class);
         return requester;
     }
 
     @Test
-    public void testSetAuction() {
-//        WebTarget webTarget = newWebTarget(USER_INES, "");
-//        Response response = webTarget.path("auctions").request().put(null);
-//        assertEquals(RESPONSE_CODE_401, response.getStatus());
-//
-//        webTarget = newWebTarget(USER_INES, PASSWORD_INES);
-//        Person requester = getRequester(webTarget);
-//        Auction auction = new Auction(requester);
-//        auction.setTitle("");
+    public void testSetAuction() throws JAXBException {
 
+        WebTarget webTarget = newWebTarget(USER_INES, PASSWORD_INES);
+        Person requester = getRequester(webTarget);
+        Auction auction = webTarget.path("auctions/7").request().get().readEntity(Auction.class);
+        Response response = webTarget.path("auctions").request().put(Entity.json(auction));
+        assertEquals(RESPONSE_CODE_403, response.getStatus());
+
+        auction = new Auction(requester);
+        auction.setTitle("TestAuction");
+        auction.setDescription("Description");
+        auction.setAskingPrice(10);
+        auction.setUnitCount((short) 1);
+        response = webTarget.path("auctions").request().put(Entity.json(auction));
+        assertEquals(RESPONSE_CODE_200, response.getStatus());
+
+        long identity = response.readEntity(Long.class);
+        this.getWasteBasket().add(identity);
+
+        webTarget = newWebTarget(USER_INES, "");
+        response = webTarget.path("auctions").request().put(Entity.json(auction));
+        assertEquals(RESPONSE_CODE_401, response.getStatus());
     }
 
     @Test
