@@ -122,7 +122,7 @@ public class AuctionService {
 	@PUT
 	@Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
 	//Creates or modifies an auction from the given template data. Note that an auction may only be modified as long as it is not sealed (i.e. is open and still without bids).
-	public void setAuction(@Valid @NotNull Auction auctionTemplate,
+	public long setAuction(@Valid @NotNull Auction auctionTemplate,
 						   @HeaderParam("Authorization") String authString) {
 		try {
 			Person requester = LifeCycleProvider.authenticate(authString);
@@ -130,9 +130,11 @@ public class AuctionService {
 				throw new ClientErrorException(403);
 			}
 			Auction auction = getEM().find(Auction.class, auctionTemplate.getIdentity());
+			long identity;
 			if (auction == null) {
 				getEM().persist(auctionTemplate);
 				getEM().getTransaction().commit();
+				identity = auctionTemplate.getIdentity();
 			} else if (!auction.isSealed()) {
 				auction.setTitle(auctionTemplate.getTitle());
 				auction.setAskingPrice(auctionTemplate.getAskingPrice());
@@ -140,9 +142,12 @@ public class AuctionService {
 				auction.setDescription(auctionTemplate.getDescription());
 				auction.setUnitCount(auctionTemplate.getUnitCount());
 				getEM().flush();
+				getEM().getTransaction().commit();
+				identity = auction.getIdentity();
 			} else {
 				throw new ClientErrorException(403);
 			}
+			return identity;
 		} catch (IllegalArgumentException exception) {
 			throw new ClientErrorException(400);
 		} catch (NotAuthorizedException exception) {
