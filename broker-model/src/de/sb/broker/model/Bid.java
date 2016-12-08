@@ -43,6 +43,7 @@ public class Bid extends BaseEntity {
 	}
 
 	public Bid() {
+		this(null, null);
 	}
 
 	public long getPrice() {
