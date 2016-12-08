@@ -10,6 +10,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBException;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+
 import static org.junit.Assert.*;
 
 /**
@@ -50,10 +54,10 @@ public class AuctionServiceTest extends ServiceTest {
         assertEquals(RESPONSE_CODE_400, webTarget.queryParam("maximum-closure", 0).request().get().getStatus());
 
         assertEquals(RESPONSE_CODE_200, webTarget.request(MediaType.APPLICATION_JSON).get().getStatus());
-        //assertEquals(RESPONSE_CODE_200, webTarget.request(MediaType.APPLICATION_XML).get().getStatus());
+//        assertEquals(RESPONSE_CODE_200, webTarget.request(MediaType.APPLICATION_XML).get().getStatus());
 
-//        List<Auction> auctions = webTarget.request().get().readEntity(???);
-//        assertFalse(auctions.isEmpty());
+        String auctions =  webTarget.request(MediaType.APPLICATION_JSON).get().readEntity(String.class);
+        assertFalse(auctions.length() != 0);
     }
 
     @Test
