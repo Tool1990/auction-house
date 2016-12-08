@@ -44,7 +44,7 @@ public class PersonService {
 	public Person[] getPeople(
 			@QueryParam("offset") @Min(0) int offset,
 			@QueryParam("limit") @Min(0) int limit,
-			@QueryParam("alias") String alias,
+			@QueryParam("alias") @Size(min = 1) String alias,
 			@QueryParam("family-name") @Size(min = 1, max = 31) String familyName,
 			@QueryParam("given-name") @Size(min = 1, max = 31) String givenName,
 			@QueryParam("group") Person.Group group,
