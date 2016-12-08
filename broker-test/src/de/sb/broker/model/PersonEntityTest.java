@@ -119,7 +119,8 @@ public class PersonEntityTest extends EntityTest {
 			String oldAlias = testPerson.getAlias();
 			testPerson.setAlias("new Alias");
 			this.getWasteBasket().add(testPerson.getIdentity());
-			entityManager.flush();
+			entityManager.getTransaction().commit();
+            entityManager.getTransaction().begin();
 			String newAlias = entityManager.find(Person.class, testPerson.getIdentity()).getAlias();
 			assertNotSame(oldAlias, newAlias);
 			entityManager.clear();

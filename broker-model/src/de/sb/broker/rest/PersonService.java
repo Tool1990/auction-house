@@ -100,10 +100,9 @@ public class PersonService {
 
 	@PUT
 	@Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.WILDCARD})
-	//Creates or modifies an auction from the given template data. Note that an auction may only be modified as long as it is not sealed (i.e. is open and still without bids).
 	public long setPerson(
 			@Valid @NotNull Person personTemplate,
-			@HeaderParam("Set-password") @NotNull String newPassword,
+			@HeaderParam("Set-password") String newPassword,
 			@HeaderParam("Authorization") String authString) {
 		try {
 			Person requester = LifeCycleProvider.authenticate(authString);
@@ -132,7 +131,9 @@ public class PersonService {
 				person.getAddress().setStreet(personTemplate.getAddress().getStreet());
 				person.getName().setFamily(personTemplate.getName().getFamily());
 				person.getName().setGiven(personTemplate.getName().getGiven());
-				person.setPasswordHash(Person.getHash(newPassword.getBytes()));
+				if (newPassword != null) {
+					person.setPasswordHash(Person.getHash(newPassword.getBytes()));
+				}
 				identity = person.getIdentity();
 				getEM().getTransaction().commit();
 			}

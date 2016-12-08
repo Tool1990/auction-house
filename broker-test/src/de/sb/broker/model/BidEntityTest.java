@@ -35,7 +35,7 @@ public class BidEntityTest extends EntityTest {
 		
 		testBid.setPrice(10);	
 		constraintViolations = validator.validate(testBid);
-		assertEquals(2, constraintViolations.size());
+		assertEquals(1, constraintViolations.size());
 		populateTestBid();
 		
 		testBid.setPrice(10000000);

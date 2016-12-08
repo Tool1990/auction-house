@@ -24,9 +24,10 @@ public class PersonServiceTest extends ServiceTest {
     static private final String USER_INES = "ines";
     static private final String PASSWORD_INES = "ines";
     private Person testPerson = new Person();
+    private Person person;
 
     @Test
-    public void testCriteriaQueries(){
+    public void testCriteriaQueries() {
         // getPeople
 
         // authentication
@@ -66,13 +67,13 @@ public class PersonServiceTest extends ServiceTest {
         assertEquals(RESPONSE_CODE_200, webTarget.request(MediaType.APPLICATION_JSON).get().getStatus());
 //        assertEquals(RESPONSE_CODE_200, webTarget.request(MediaType.APPLICATION_XML).get().getStatus());
 
-        String persons =  webTarget.request(MediaType.APPLICATION_JSON).get().readEntity(String.class);
+        String persons = webTarget.request(MediaType.APPLICATION_JSON).get().readEntity(String.class);
         assertFalse(persons.length() == 0);
     }
 
 
     @Test
-    public void testIdentityQueries(){
+    public void testIdentityQueries() {
         WebTarget webTarget = newWebTarget(USER_INES, "");
         Response response = webTarget.path("people/500").request().get();
         assertEquals(RESPONSE_CODE_401, response.getStatus());
@@ -88,7 +89,7 @@ public class PersonServiceTest extends ServiceTest {
     }
 
     @Test
-    public void testAuctionRelationQueries(){
+    public void testAuctionRelationQueries() {
         WebTarget webTarget = newWebTarget(USER_INES, "");
         Response response = webTarget.path("people/1/auctions").request().get();
         assertEquals(RESPONSE_CODE_401, response.getStatus());
@@ -102,7 +103,7 @@ public class PersonServiceTest extends ServiceTest {
     }
 
     @Test
-    public void testBidRelationQueries(){
+    public void testBidRelationQueries() {
         WebTarget webTarget = newWebTarget(USER_INES, "");
         Response response = webTarget.path("people/1/bids").request().get();
         assertEquals(RESPONSE_CODE_401, response.getStatus());
@@ -117,15 +118,26 @@ public class PersonServiceTest extends ServiceTest {
     }
 
     @Test
-    public void testLifeCycle(){
+    public void testLifeCycle() {
         // create, update, delete...
         try {
             Person person = populateTestPerson();
-            getWasteBasket().add(person.getIdentity());
             WebTarget webTarget = newWebTarget(USER_INES, PASSWORD_INES);
-            Response response = webTarget.path("people").request().put(Entity.json(person));
+            Response response = webTarget.path("people").request().header("Set-password", "test123").put(Entity.json(person));
+            long identity = response.readEntity(Long.class);
+            getWasteBasket().add(identity);
             assertEquals(response.getStatus(), RESPONSE_CODE_200);
-        }finally {
+
+            person = webTarget.path("people/" + identity).request().get().readEntity(Person.class);
+            person.setAlias("ichangedmyalias5");
+            response = webTarget.path("people").request().put(Entity.json(person));
+            assertEquals(response.getStatus(), RESPONSE_CODE_200);
+            Person updatedPerson = webTarget.path("people/" + identity).request().get().readEntity(Person.class);
+            assertEquals(updatedPerson.getAlias(),"ichangedmyalias5");
+
+            assertEquals(RESPONSE_CODE_204, newWebTarget("ines", "ines").path("entities/" + identity).request().delete().getStatus());
+
+        } finally {
             emptyWasteBasket();
         }
 
@@ -133,14 +145,14 @@ public class PersonServiceTest extends ServiceTest {
     }
 
     private Person populateTestPerson() {
-        testPerson.setAlias("testAlias");
+        testPerson.setAlias("testAlias11");
         testPerson.setGroup(Person.Group.USER);
         testPerson.setPasswordHash(Person.getHash("123".getBytes()));
-        testPerson.getName().setFamily("testFamilyName");
-        testPerson.getName().setGiven("testGivenName");
-        testPerson.getAddress().setCity("testCity");
-        testPerson.getContact().setEmail("testEmail@test.de");
-        testPerson.getContact().setPhone("0123456789");
+        testPerson.getName().setFamily("testFamilyName11");
+        testPerson.getName().setGiven("testGivenName11");
+        testPerson.getAddress().setCity("testCity1");
+        testPerson.getContact().setEmail("testEmail@test11.de");
+        testPerson.getContact().setPhone("01234567899");
         return testPerson;
     }
 
