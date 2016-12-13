@@ -124,30 +124,26 @@ public class AuctionService {
 	//Creates or modifies an auction from the given template data. Note that an auction may only be modified as long as it is not sealed (i.e. is open and still without bids).
 	public long setAuction(@Valid @NotNull Auction auctionTemplate,
 						   @HeaderParam("Authorization") String authString) {
+		Auction auction = null;
 		try {
 			Person requester = LifeCycleProvider.authenticate(authString);
-			if (requester.getIdentity() != auctionTemplate.getSellerReference() && !requester.getGroup().equals(Person.Group.ADMIN)) {
-				throw new ClientErrorException(403);
-			}
-			Auction auction = getEM().find(Auction.class, auctionTemplate.getIdentity());
-			long identity;
+			auction = getEM().find(Auction.class, auctionTemplate.getIdentity());
 			if (auction == null) {
-				getEM().persist(auctionTemplate);
+				auction = new Auction(requester);
+				auction = transferAuctionAttributes(auction, auctionTemplate);
+				getEM().persist(auction);
 				getEM().getTransaction().commit();
-				identity = auctionTemplate.getIdentity();
 			} else if (!auction.isSealed()) {
-				auction.setTitle(auctionTemplate.getTitle());
-				auction.setAskingPrice(auctionTemplate.getAskingPrice());
-				auction.setClosureTimestamp(auctionTemplate.getClosureTimestamp());
-				auction.setDescription(auctionTemplate.getDescription());
-				auction.setUnitCount(auctionTemplate.getUnitCount());
+				if (requester.getIdentity() != auction.getSellerReference() && !requester.getGroup().equals(Person.Group.ADMIN)) {
+					throw new ClientErrorException(403);
+				}
+				auction = transferAuctionAttributes(auction, auctionTemplate);
 				getEM().flush();
 				getEM().getTransaction().commit();
-				identity = auction.getIdentity();
 			} else {
 				throw new ClientErrorException(403);
 			}
-			return identity;
+			return auction.getIdentity();
 		} catch (IllegalArgumentException exception) {
 			throw new ClientErrorException(400);
 		} catch (NotAuthorizedException exception) {
@@ -155,11 +151,22 @@ public class AuctionService {
 		} catch (RollbackException exception) {
 			throw new ClientErrorException(409);
 		} finally {
-			Cache cache = getEM().getEntityManagerFactory().getCache();
-			cache.evict(Person.class, auctionTemplate.getSeller().getIdentity());
 			if (!getEM().getTransaction().isActive())
 				getEM().getTransaction().begin();
+//			if (auction != null) {
+//				Cache cache = getEM().getEntityManagerFactory().getCache();
+//				cache.evict(Person.class, auction.getSeller().getIdentity());
+//			}
 		}
+	}
+
+	private Auction transferAuctionAttributes(Auction auction, Auction auctionTemplate) {
+		auction.setTitle(auctionTemplate.getTitle());
+		auction.setAskingPrice(auctionTemplate.getAskingPrice());
+		auction.setClosureTimestamp(auctionTemplate.getClosureTimestamp());
+		auction.setDescription(auctionTemplate.getDescription());
+		auction.setUnitCount(auctionTemplate.getUnitCount());
+		return auction;
 	}
 
 	@GET

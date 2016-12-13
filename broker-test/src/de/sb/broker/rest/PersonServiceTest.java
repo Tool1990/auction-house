@@ -1,6 +1,5 @@
 package de.sb.broker.rest;
 
-import de.sb.broker.model.Auction;
 import de.sb.broker.model.Person;
 import org.junit.Test;
 
@@ -9,7 +8,8 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class PersonServiceTest extends ServiceTest {
 
@@ -133,7 +133,7 @@ public class PersonServiceTest extends ServiceTest {
             response = webTarget.path("people").request().put(Entity.json(person));
             assertEquals(response.getStatus(), RESPONSE_CODE_200);
             Person updatedPerson = webTarget.path("people/" + identity).request().get().readEntity(Person.class);
-            assertEquals(updatedPerson.getAlias(),"ichangedmyalias5");
+            assertEquals(updatedPerson.getAlias(), "ichangedmyalias5");
 
             assertEquals(RESPONSE_CODE_204, newWebTarget("ines", "ines").path("entities/" + identity).request().delete().getStatus());
 

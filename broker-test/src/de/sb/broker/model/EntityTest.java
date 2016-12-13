@@ -23,92 +23,92 @@ import static java.util.logging.Level.WARNING;
  */
 @TypeMetadata(copyright = "2015-2015 Sascha Baumeister, all rights reserved", version = "1.0.0", authors = "Sascha Baumeister")
 public abstract class EntityTest {
-	static private final String PERSISTENCE_UNIT_NAME = "broker";
-	static private EntityManagerFactory ENTITY_MANAGER_FACTORY;
-	static private ValidatorFactory ENTITY_VALIDATOR_FACTORY = Validation.buildDefaultValidatorFactory();
+    static private final String PERSISTENCE_UNIT_NAME = "broker";
+    static private EntityManagerFactory ENTITY_MANAGER_FACTORY;
+    static private ValidatorFactory ENTITY_VALIDATOR_FACTORY = Validation.buildDefaultValidatorFactory();
 
-	private final Set<Long> wasteBasket = new HashSet<>();
-
-
-	/**
-	 * Returns the entity manager factory.
-	 *
-	 * @return the entity manager factory
-	 */
-	public EntityManagerFactory getEntityManagerFactory() {
-		return ENTITY_MANAGER_FACTORY;
-	}
+    private final Set<Long> wasteBasket = new HashSet<>();
 
 
-	/**
-	 * Returns the entity validator factory.
-	 *
-	 * @return the entity validator factory
-	 */
-	public ValidatorFactory getEntityValidatorFactory() {
-		return ENTITY_VALIDATOR_FACTORY;
-	}
+    /**
+     * Returns the entity manager factory.
+     *
+     * @return the entity manager factory
+     */
+    public EntityManagerFactory getEntityManagerFactory() {
+        return ENTITY_MANAGER_FACTORY;
+    }
 
 
-	/**
-	 * Returns the waste basket.
-	 *
-	 * @return the identities of entities to be deleted after each test
-	 */
-	public Set<Long> getWasteBasket() {
-		return this.wasteBasket;
-	}
+    /**
+     * Returns the entity validator factory.
+     *
+     * @return the entity validator factory
+     */
+    public ValidatorFactory getEntityValidatorFactory() {
+        return ENTITY_VALIDATOR_FACTORY;
+    }
 
 
-	/**
-	 * Creates a new entity manager factory.
-	 */
-	@BeforeClass
-	static public void createClassResources() {
-		ENTITY_MANAGER_FACTORY = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
-	}
+    /**
+     * Returns the waste basket.
+     *
+     * @return the identities of entities to be deleted after each test
+     */
+    public Set<Long> getWasteBasket() {
+        return this.wasteBasket;
+    }
 
 
-	/**
-	 * Closes the entity manager factory.
-	 */
-	@AfterClass
-	static public void closeClassResources() {
-		ENTITY_MANAGER_FACTORY.close();
-	}
+    /**
+     * Creates a new entity manager factory.
+     */
+    @BeforeClass
+    static public void createClassResources() {
+        ENTITY_MANAGER_FACTORY = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
+    }
 
 
-	/**
-	 * Removes any entity with an identity contained within the waste basket,
-	 * and clears the latter.
-	 */
-	@After
-	public void emptyWasteBasket() {
-		final EntityManager entityManager = ENTITY_MANAGER_FACTORY.createEntityManager();
-		try {
-			entityManager.getTransaction().begin();
-			for (final Long identity : this.wasteBasket) {
-				try {
-					final Object entity = entityManager.find(BaseEntity.class, identity);
-					if (entity != null) entityManager.remove(entity);
-				} catch (final Exception exception) {
-					Logger.getGlobal().log(WARNING, exception.getMessage(), exception);
-				}
-			}
-			entityManager.getTransaction().commit();
-			this.wasteBasket.clear();
-		} finally {
-			entityManager.close();
-		}
-	}
+    /**
+     * Closes the entity manager factory.
+     */
+    @AfterClass
+    static public void closeClassResources() {
+        ENTITY_MANAGER_FACTORY.close();
+    }
 
-	public static String generateString(int length) {
-		StringBuilder stringBuilder = new StringBuilder();
 
-		for (int i = 0; i < length; i++) {
-			stringBuilder.append("*");
-		}
+    /**
+     * Removes any entity with an identity contained within the waste basket,
+     * and clears the latter.
+     */
+    @After
+    public void emptyWasteBasket() {
+        final EntityManager entityManager = ENTITY_MANAGER_FACTORY.createEntityManager();
+        try {
+            entityManager.getTransaction().begin();
+            for (final Long identity : this.wasteBasket) {
+                try {
+                    final Object entity = entityManager.find(BaseEntity.class, identity);
+                    if (entity != null) entityManager.remove(entity);
+                } catch (final Exception exception) {
+                    Logger.getGlobal().log(WARNING, exception.getMessage(), exception);
+                }
+            }
+            entityManager.getTransaction().commit();
+            this.wasteBasket.clear();
+        } finally {
+            entityManager.close();
+        }
+    }
 
-		return stringBuilder.toString();
-	}
+    public static String generateString(int length) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        for (int i = 0; i < length; i++) {
+            stringBuilder.append("*");
+        }
+
+        return stringBuilder.toString();
+    }
 }

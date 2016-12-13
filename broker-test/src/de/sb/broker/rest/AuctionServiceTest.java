@@ -10,11 +10,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBException;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.Calendar;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Created by Wayne on 06.12.2016.
@@ -56,8 +55,8 @@ public class AuctionServiceTest extends ServiceTest {
         assertEquals(RESPONSE_CODE_200, webTarget.request(MediaType.APPLICATION_JSON).get().getStatus());
 //        assertEquals(RESPONSE_CODE_200, webTarget.request(MediaType.APPLICATION_XML).get().getStatus());
 
-        String auctions =  webTarget.request(MediaType.APPLICATION_JSON).get().readEntity(String.class);
-        assertFalse(auctions.length() == 0);
+        Auction[] auctions = webTarget.request(MediaType.APPLICATION_JSON).get(Auction[].class);
+        assertFalse(auctions.length == 0);
     }
 
     @Test
@@ -77,35 +76,39 @@ public class AuctionServiceTest extends ServiceTest {
 
     }
 
-    public Person getRequester(WebTarget webTarget) {
-        Person requester = webTarget.path("people/requester").request().get().readEntity(Person.class);
-        return requester;
+    @Test
+    public void testSetAuction() throws JAXBException {
+
+        WebTarget webTarget = newWebTarget(USER_INES, PASSWORD_INES);
+        Auction auction = webTarget.path("auctions/7").request().get().readEntity(Auction.class);
+        Response response = webTarget.path("auctions").request().put(Entity.json(auction));
+        assertEquals(RESPONSE_CODE_403, response.getStatus());
+
+        auction = createTestAuction();
+        response = webTarget.path("auctions").request().put(Entity.json(auction));
+        assertEquals(RESPONSE_CODE_200, response.getStatus());
+
+        long identity = response.readEntity(Long.class);
+        this.getWasteBasket().add(identity);
+
+        webTarget = newWebTarget(USER_INES, "");
+        response = webTarget.path("auctions").request().put(Entity.json(auction));
+        assertEquals(RESPONSE_CODE_401, response.getStatus());
     }
 
-//    @Test
-//    public void testSetAuction() throws JAXBException {
-//
-//        WebTarget webTarget = newWebTarget(USER_INES, PASSWORD_INES);
-//        Person requester = getRequester(webTarget);
-//        Auction auction = webTarget.path("auctions/7").request().get().readEntity(Auction.class);
-//        Response response = webTarget.path("auctions").request().put(Entity.json(auction));
-//        assertEquals(RESPONSE_CODE_403, response.getStatus());
-//
-//        auction = new Auction(requester);
-//        auction.setTitle("TestAuction");
-//        auction.setDescription("Description");
-//        auction.setAskingPrice(10);
-//        auction.setUnitCount((short) 1);
-//        response = webTarget.path("auctions").request().put(Entity.json(auction));
-//        assertEquals(RESPONSE_CODE_200, response.getStatus());
-//
-//        long identity = response.readEntity(Long.class);
-//        this.getWasteBasket().add(identity);
-//
-//        webTarget = newWebTarget(USER_INES, "");
-//        response = webTarget.path("auctions").request().put(Entity.json(auction));
-//        assertEquals(RESPONSE_CODE_401, response.getStatus());
-//    }
+    private Auction createTestAuction() {
+        Auction auction = new Auction();
+        auction.setAskingPrice(200);
+        Calendar cal = Calendar.getInstance();
+        cal.set(2017, 11, 03);
+        cal.add(Calendar.DATE, 1);
+        auction.setClosureTimestamp(cal.getTime().getTime());
+        auction.setDescription("This is a Test Auction");
+        auction.setTitle("testAuction");
+        auction.setUnitCount((short) 1);
+
+        return auction;
+    }
 
     @Test
     public void testGetBid() {
