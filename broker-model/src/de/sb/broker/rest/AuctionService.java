@@ -247,7 +247,6 @@ public class AuctionService {
 			}
 
 			Bid bid = auction.getBid(requester);
-
 			if (bid == null) { //create new bid
 				bid = new Bid(auction, requester);
 				bid.setPrice(price);
@@ -262,6 +261,8 @@ public class AuctionService {
 				bid.setPrice(price);
 				getEM().getTransaction().commit();
 			}
+
+			return Response.ok().entity(bid.getIdentity()).build();
 		} catch (IllegalArgumentException exception) {
 			throw new ClientErrorException(400);
 		} catch (NotAuthorizedException exception) {
@@ -278,7 +279,5 @@ public class AuctionService {
 				cache.evict(Person.class, requester.getIdentity());
 			}
 		}
-
-		return Response.ok().build();
 	}
 }
