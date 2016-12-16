@@ -111,15 +111,15 @@ public class AuctionServiceTest extends ServiceTest {
     @Test
     public void testSetBid() {
         WebTarget webTarget = newWebTarget(USER_INES, "");
-        Response response = webTarget.path("auctions/6/bid").request().post(Entity.form(new Form().param("price", "-1")));
+        Response response = webTarget.path("auctions/6/bid").request().post(Entity.entity(-1L, MediaType.TEXT_PLAIN));
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
 
-        Form form = new Form().param("price", "10000");
-        response = webTarget.path("auctions/6/bid").request().post(Entity.form(form));
+        Entity entity = Entity.entity(1000L, MediaType.TEXT_PLAIN);
+        response = webTarget.path("auctions/6/bid").request().post(entity);
         assertEquals(Response.Status.UNAUTHORIZED.getStatusCode(), response.getStatus());
 
         webTarget = newWebTarget(USER_INES, PASSWORD_INES);
-        response = webTarget.path("auctions/-1/bid").request().post(Entity.form(form));
+        response = webTarget.path("auctions/-1/bid").request().post(entity);
         assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
 
         //bid on own auction
@@ -128,22 +128,22 @@ public class AuctionServiceTest extends ServiceTest {
         assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         long auctionIdentity = response.readEntity(Long.class);
         this.getWasteBasket().add(auctionIdentity);
-        response = webTarget.path("auctions/" + auctionIdentity + "/bid").request().post(Entity.form(form));
-        assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+        response = webTarget.path("auctions/" + auctionIdentity + "/bid").request().post(entity);
+        assertEquals(Response.Status.FORBIDDEN.getStatusCode(), response.getStatus());
 
         //new bid
         webTarget = newWebTarget(USER_SASCHA, PASSWORD_SASCHA);
-        response = webTarget.path("auctions/" + auctionIdentity + "/bid").request().post(Entity.form(form));
+        response = webTarget.path("auctions/" + auctionIdentity + "/bid").request().post(entity);
         assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         long bidIdentity = response.readEntity(Long.class);
         this.getWasteBasket().add(bidIdentity);
 
         //update bid
-        response = webTarget.path("auctions/" + auctionIdentity + "/bid").request().post(Entity.form(new Form().param("price", "10000")));
+        response = webTarget.path("auctions/" + auctionIdentity + "/bid").request().post(entity);
         assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
 
         //remove bid
-        response = webTarget.path("auctions/" + auctionIdentity + "/bid").request().post(Entity.form(new Form().param("price", "0")));
+        response = webTarget.path("auctions/" + auctionIdentity + "/bid").request().post(Entity.entity(0L, MediaType.TEXT_PLAIN));
         assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         response = webTarget.path("auctions/" + auctionIdentity + "/bid").request().get();
         assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());

@@ -67,8 +67,8 @@ public class PersonServiceTest extends ServiceTest {
         assertEquals(RESPONSE_CODE_200, webTarget.request(MediaType.APPLICATION_JSON).get().getStatus());
 //        assertEquals(RESPONSE_CODE_200, webTarget.request(MediaType.APPLICATION_XML).get().getStatus());
 
-        String persons = webTarget.request(MediaType.APPLICATION_JSON).get().readEntity(String.class);
-        assertFalse(persons.length() == 0);
+        Person[] persons = webTarget.request(MediaType.APPLICATION_JSON).get(Person[].class);
+        assertFalse(persons.length == 0);
     }
 
 
