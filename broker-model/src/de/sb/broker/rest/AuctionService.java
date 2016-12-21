@@ -209,7 +209,8 @@ public class AuctionService {
     public long setBid(
             @HeaderParam("Authorization") String authString,
             @PathParam("identity") long auctionIdentity,
-            @Min(0) long price) {
+            @Min(0) long price
+    ) {
         try {
             Person requester = LifeCycleProvider.authenticate(authString);
 

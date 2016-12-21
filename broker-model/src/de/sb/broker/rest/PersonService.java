@@ -94,7 +94,8 @@ public class PersonService {
     public long setPerson(
             @Valid @NotNull Person personTemplate,
             @HeaderParam("Set-password") String newPassword,
-            @HeaderParam("Authorization") String authString) {
+            @HeaderParam("Authorization") String authString
+    ) {
         try {
             Person requester = LifeCycleProvider.authenticate(authString);
             if ((requester.getIdentity() != personTemplate.getIdentity() && !requester.getGroup().equals(Person.Group.ADMIN))) {
@@ -149,7 +150,8 @@ public class PersonService {
     @Path("{identity}")
     //Returns  the person matching the given identity.
     public Person getPerson(@PathParam("identity") long personIdentity,
-                            @HeaderParam("Authorization") String authString) {
+                            @HeaderParam("Authorization") String authString
+    ) {
         LifeCycleProvider.authenticate(authString);
         Person person = getEM().find(Person.class, personIdentity);
 
@@ -175,7 +177,9 @@ public class PersonService {
     public Response getAuctions(
             @PathParam("identity") long personIdentity,
             @QueryParam("seller") Boolean seller,
-            @HeaderParam("Authorization") String authString) {
+            @QueryParam("closed") Boolean closed,
+            @HeaderParam("Authorization") String authString
+    ) {
         LifeCycleProvider.authenticate(authString);
         Person person = getEM().find(Person.class, personIdentity);
 
@@ -186,10 +190,6 @@ public class PersonService {
         List<Auction> auctions = new ArrayList<>();
         List<Annotation> filterAnnotations = new ArrayList<>();
 
-        //TODO: extra annotationen bei closed ==true
-        //bidsAsEntity, bidderAsEntity, AuctionAsReference
-        //wenn seller = true
-        //sellerAsReference sonst SellerAsEntity
         if (seller == Boolean.TRUE) {
             auctions.addAll(person.getAuctions());
             filterAnnotations.add(new Auction.XmlSellerAsReferenceFilter.Literal());
@@ -213,6 +213,24 @@ public class PersonService {
             filterAnnotations.add(new Auction.XmlSellerAsEntityFilter.Literal());
         }
 
+        if (closed == Boolean.TRUE) {
+            for (Iterator<Auction> iterator = auctions.iterator(); iterator.hasNext(); ) {
+                if (!iterator.next().isClosed()) {
+                    iterator.remove();
+                }
+            }
+
+            filterAnnotations.add(new Auction.XmlBidsAsEntityFilter.Literal());
+            filterAnnotations.add(new Bid.XmlBidderAsEntityFilter.Literal());
+            filterAnnotations.add(new Bid.XmlAuctionAsReferenceFilter.Literal());
+        } else if (closed == Boolean.FALSE) {
+            for (Iterator<Auction> iterator = auctions.iterator(); iterator.hasNext(); ) {
+                if (iterator.next().isClosed()) {
+                    iterator.remove();
+                }
+            }
+        }
+
         Collections.sort(auctions, Comparator.comparing(Auction::getClosureTimestamp)
                 .thenComparing(Auction::getCreationTimestamp)
                 .thenComparing(Auction::getIdentity));
@@ -229,7 +247,8 @@ public class PersonService {
     @Bid.XmlBidderAsEntityFilter
     //Returns all bids for closed auctions
     public Bid[] getBids(@PathParam("identity") long personIdentity,
-                         @HeaderParam("Authorization") String authString) {
+                         @HeaderParam("Authorization") String authString
+    ) {
         Person requester = LifeCycleProvider.authenticate(authString);
         Person person = getEM().find(Person.class, personIdentity);
 
@@ -278,11 +297,11 @@ public class PersonService {
             @NotNull byte[] documentContent,
             @NotNull @HeaderParam("Content-type") String contentType,
             @PathParam("identity") long personIdentity,
-            @HeaderParam("Authorization") String authString) {
-        Person person = null;
+            @HeaderParam("Authorization") String authString
+    ) {
         try {
             Person requester = LifeCycleProvider.authenticate(authString);
-            person = getEM().find(Person.class, personIdentity);
+            Person person = getEM().find(Person.class, personIdentity);
 
             if (person == null) {
                 throw new ClientErrorException(404);
