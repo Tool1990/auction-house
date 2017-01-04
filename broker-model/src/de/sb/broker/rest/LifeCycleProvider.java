@@ -101,7 +101,9 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 	 * @see HttpAuthenticationCodec#decode(String)
 	 */
 	static public Person authenticate(final String authentication) throws ClientErrorException, PersistenceException, IllegalStateException {
-		if (authentication == null) throw new NotAuthorizedException("Basic");
+		if (authentication == null) {
+			throw new NotAuthorizedException("Basic");
+		}
 
 		final Map<String, String> credentials;
 		try {

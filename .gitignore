@@ -8,4 +8,7 @@ broker-model/.idea/
 broker-model/out/
 broker-test/.idea/
 broker-test/out/
+broker-web/.idea/
+broker-web/bin/
+broker-web/out/
 *.iml
