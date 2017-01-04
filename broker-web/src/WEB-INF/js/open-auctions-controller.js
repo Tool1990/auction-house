@@ -121,7 +121,7 @@ this.de.sb.broker = this.de.sb.broker || {};
                 btn.className = "btn";
                 btn.value = "edit";
                 btn.onclick = (function(){
-                	self.displayAuctionEdit(auction.id);
+                	self.displayAuctionEdit(auction.identity);
 				}).bind(self);
                 var toAppend = activeElements[0].value === self.sessionContext.user.alias ? btn: "TODO";
 				activeElements[6].append(toAppend);
@@ -133,10 +133,27 @@ this.de.sb.broker = this.de.sb.broker || {};
 		 * @param auction id
 		 */
         de.sb.broker.OpenAuctionsController.prototype.displayAuctionEdit = function(auctionId){
+        	console.log(auctionId);
         	if(!document.querySelector("main").contains(document.querySelector(".auction-form"))) {
                 var sectionElement = document.querySelector("#auction-form-template").content.cloneNode(true).firstElementChild;
                 document.querySelector("main").appendChild(sectionElement);
             }
+            var resource = "/services/auctions/" + auctionId;
+            de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, this.sessionContext, function (request) {
+
+                if (request.status === 200) {
+                    var auction = JSON.parse(request.responseText);
+                    var formElement = document.querySelector("section.auction-form");
+                    var inputs = formElement.querySelectorAll("input");
+                    inputs[0].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+                    inputs[1].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+                    inputs[2].value = auction.title;
+                    var description = formElement.querySelector("textarea");
+                    description.value = auction.description;
+                    inputs[3].value = auction.unitCount;
+                    inputs[4].value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);
+                }
+            });
 		}
 
 		/**
