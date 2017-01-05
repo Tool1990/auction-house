@@ -86,7 +86,8 @@ public class AuctionServiceTest extends ServiceTest {
         this.getWasteBasket().add(identity);
 
         auction = webTarget.path("auctions/" + identity).request().get().readEntity(Auction.class);
-        response = webTarget.path("auctions").request().put(Entity.json(auction)); // new auction !isSealed
+        Entity et = Entity.json(auction);
+        response = webTarget.path("auctions").request().put(et); // new auction !isSealed
         assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
 
         webTarget = newWebTarget(USER_INES, "");

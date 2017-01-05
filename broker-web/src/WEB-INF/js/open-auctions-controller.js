@@ -72,18 +72,6 @@ this.de.sb.broker = this.de.sb.broker || {};
 			statusAccumulator.offer(request.status, request.statusText);
 			indebtedSemaphore.release();
 		});
-		// filling
-		// var resource = "/services/people/" + this.sessionContext.user.identity + "/auctions?seller=false&closed=false";
-		// de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, this.sessionContext, function (request) {
-		// 	if (request.status === 200) {
-		// 		var reqAuctions = JSON.parse(request.responseText);
-		// 		auctions = auctions.concat(reqAuctions);
-         //        console.log("bidder", reqAuctions);
-		// 	}
-		// 	statusAccumulator.offer(request.status, request.statusText);
-		// 	indebtedSemaphore.release();
-		// });
-
 		indebtedSemaphore.acquire(function () {
 			self.displayStatus(statusAccumulator.status, statusAccumulator.statusText);
 		});
@@ -102,6 +90,7 @@ this.de.sb.broker = this.de.sb.broker || {};
 				cellElement.appendChild(document.createElement("output"));
 				rowTemplate.appendChild(cellElement);
 			}
+
 
 			var self = this;
 			auctions.forEach(function (auction) {
@@ -123,9 +112,16 @@ this.de.sb.broker = this.de.sb.broker || {};
                 btn.onclick = (function(){
                 	self.displayAuctionEdit(auction.identity);
 				}).bind(self);
-                var toAppend = activeElements[0].value === self.sessionContext.user.alias ? btn: "TODO";
+                var number = document.createElement('input');
+                number.type = "number";
+                number.value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);
+                var toAppend = activeElements[0].value === self.sessionContext.user.alias ? btn: number;
 				activeElements[6].append(toAppend);
 			});
+            var newButton = document.querySelector("section.open-auctions button");
+            newButton.onclick = (function(){
+                self.displayAuctionEdit();
+            }).bind(self);
 		}
 
 		/**
@@ -137,8 +133,17 @@ this.de.sb.broker = this.de.sb.broker || {};
         	if(!document.querySelector("main").contains(document.querySelector(".auction-form"))) {
                 var sectionElement = document.querySelector("#auction-form-template").content.cloneNode(true).firstElementChild;
                 document.querySelector("main").appendChild(sectionElement);
+                this.addSendButton(auctionId);
             }
+
+			this.fillAuctionTemplate(auctionId);
+
+		}
+
+    	de.sb.broker.OpenAuctionsController.prototype.fillAuctionTemplate = function(auctionId) {
+        	if(!auctionId) return;
             var resource = "/services/auctions/" + auctionId;
+            var self = this;
             de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, this.sessionContext, function (request) {
 
                 if (request.status === 200) {
@@ -152,9 +157,49 @@ this.de.sb.broker = this.de.sb.broker || {};
                     description.value = auction.description;
                     inputs[3].value = auction.unitCount;
                     inputs[4].value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);
+
                 }
             });
-		}
+        }
+
+    	de.sb.broker.OpenAuctionsController.prototype.addSendButton = function(auctionId) {
+            var formElement = document.querySelector("section.auction-form");
+            var sendBtn = formElement.children[1];
+            sendBtn.onclick = (function(){
+            	var self = this;
+
+                var inputs = formElement.querySelectorAll("input");
+                var auction = {};
+                auction.creationTimestamp = Date.parse(inputs[0].value);
+                auction.closureTimestamp = Date.parse(inputs[1].value);
+                auction.title = inputs[2].value;
+                auction.unitCount = inputs[3].value;
+                auction.askingPrice = Number.parseInt(inputs[4].value) * 100;
+                var description = formElement.querySelector("textarea");
+                auction.description = description.value;
+                if(auctionId) {
+                    auction.identity = auctionId;
+                }
+
+                var resource = "/services/auctions";
+                console.log(auction);
+                de.sb.util.AJAX.invoke(resource, "PUT", {"Accept": "application/json", "Content-Type" : "application/json"}, JSON.stringify(auction), self.sessionContext, function (request) {
+
+                    if (request.status === 200) {
+						document.querySelector("main").removeChild(formElement);
+
+
+                    }else{
+
+                        self.fillAuctionTemplate(auctionId);
+					}
+					console.log(request.status);
+					self.displayStatus(request.status, request.statusText);
+
+                })
+            }).bind(this);
+    	}
+
 
 		/**
 		 * Displays the given auctions that feature the requester as bidder.
