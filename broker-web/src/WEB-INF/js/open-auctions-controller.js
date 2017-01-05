@@ -141,25 +141,37 @@ this.de.sb.broker = this.de.sb.broker || {};
 		}
 
     	de.sb.broker.OpenAuctionsController.prototype.fillAuctionTemplate = function(auctionId) {
-        	if(!auctionId) return;
-            var resource = "/services/auctions/" + auctionId;
-            var self = this;
-            de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, this.sessionContext, function (request) {
+            var formElement = document.querySelector("section.auction-form");
+            var inputs = formElement.querySelectorAll("input");
+        	if(auctionId) {
+                var resource = "/services/auctions/" + auctionId;
+                var self = this;
+                de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, this.sessionContext, function (request) {
 
-                if (request.status === 200) {
-                    var auction = JSON.parse(request.responseText);
-                    var formElement = document.querySelector("section.auction-form");
-                    var inputs = formElement.querySelectorAll("input");
-                    inputs[0].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-                    inputs[1].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-                    inputs[2].value = auction.title;
-                    var description = formElement.querySelector("textarea");
-                    description.value = auction.description;
-                    inputs[3].value = auction.unitCount;
-                    inputs[4].value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);
+                    if (request.status === 200) {
+                        var auction = JSON.parse(request.responseText);
 
-                }
-            });
+                        inputs[0].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+                        inputs[1].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+                        inputs[2].value = auction.title;
+                        var description = formElement.querySelector("textarea");
+                        description.value = auction.description;
+                        inputs[3].value = auction.unitCount;
+                        inputs[4].value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);
+
+                    }
+                });
+            }else{
+                inputs[0].value = new Date().toLocaleString(TIMESTAMP_OPTIONS);
+				var endDate = new Date();
+                endDate.setDate(endDate.getDate()+30);
+                inputs[1].value = endDate.toLocaleString(TIMESTAMP_OPTIONS);
+                inputs[2].value = "";
+                var description = formElement.querySelector("textarea");
+                description.value = "";
+                inputs[3].value = 1;
+                inputs[4].value = 0.01;
+			}
         }
 
     	de.sb.broker.OpenAuctionsController.prototype.addSendButton = function(auctionId) {
