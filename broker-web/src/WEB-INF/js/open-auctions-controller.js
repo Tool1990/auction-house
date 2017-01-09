@@ -85,7 +85,7 @@ this.de.sb.broker = this.de.sb.broker || {};
 		de.sb.broker.OpenAuctionsController.prototype.displayAuctions = function (auctions) {
 			var tableBodyElement = document.querySelector("section.open-auctions tbody");
 			var rowTemplate = document.createElement("tr");
-			for (var index = 0; index < auctions.length; ++index) {
+			for (var index = 0; index < 7; ++index) {
 				var cellElement = document.createElement("td");
 				cellElement.appendChild(document.createElement("output"));
 				rowTemplate.appendChild(cellElement);
@@ -110,7 +110,7 @@ this.de.sb.broker = this.de.sb.broker || {};
                 btn.className = "btn";
                 btn.value = "edit";
                 btn.onclick = (function(){
-                	self.displayAuctionEdit(auction.identity);
+                	self.displayAuctionEdit(auction);
 				}).bind(self);
                 var number = document.createElement('input');
                 number.type = "number";
@@ -128,42 +128,35 @@ this.de.sb.broker = this.de.sb.broker || {};
 		 * Displays the auction the user wants to edit
 		 * @param auction id
 		 */
-        de.sb.broker.OpenAuctionsController.prototype.displayAuctionEdit = function(auctionId){
-        	console.log(auctionId);
+        de.sb.broker.OpenAuctionsController.prototype.displayAuctionEdit = function(auction){
+        	console.log(auction);
         	if(!document.querySelector("main").contains(document.querySelector(".auction-form"))) {
                 var sectionElement = document.querySelector("#auction-form-template").content.cloneNode(true).firstElementChild;
                 document.querySelector("main").appendChild(sectionElement);
-                this.addSendButton(auctionId);
             }
 
-			this.fillAuctionTemplate(auctionId);
+			this.fillAuctionTemplate(auction);
 
 		}
 
-    	de.sb.broker.OpenAuctionsController.prototype.fillAuctionTemplate = function(auctionId) {
+    	de.sb.broker.OpenAuctionsController.prototype.fillAuctionTemplate = function(auction) {
             var formElement = document.querySelector("section.auction-form");
             var inputs = formElement.querySelectorAll("input");
-        	if(auctionId) {
-                var resource = "/services/auctions/" + auctionId;
-                var self = this;
-                de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, this.sessionContext, function (request) {
+        	if(auction) {
+				inputs[0].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+				console.log("creation: ", auction.creationTimestamp, "   closure: ", auction.closureTimestamp);
+				inputs[1].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+				inputs[2].value = auction.title;
+				var description = formElement.querySelector("textarea");
+				description.value = auction.description;
+				inputs[3].value = auction.unitCount;
+				inputs[4].value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);
 
-                    if (request.status === 200) {
-                        var auction = JSON.parse(request.responseText);
 
-                        inputs[0].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-                        inputs[1].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-                        inputs[2].value = auction.title;
-                        var description = formElement.querySelector("textarea");
-                        description.value = auction.description;
-                        inputs[3].value = auction.unitCount;
-                        inputs[4].value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);
 
-                    }
-                });
             }else{
-                inputs[0].value = new Date().toLocaleString(TIMESTAMP_OPTIONS);
-				var endDate = new Date();
+                inputs[0].value = new Date(Date.now()).toLocaleString(TIMESTAMP_OPTIONS);
+				var endDate = new Date(Date.now());
                 endDate.setDate(endDate.getDate()+30);
                 inputs[1].value = endDate.toLocaleString(TIMESTAMP_OPTIONS);
                 inputs[2].value = "";
@@ -171,24 +164,26 @@ this.de.sb.broker = this.de.sb.broker || {};
                 description.value = "";
                 inputs[3].value = 1;
                 inputs[4].value = 0.01;
+
+                var auction = {};
+                auction.creationTimestamp = new Date().getTime();
+                auction.closureTimestamp = endDate.getTime();
 			}
+            this.addSendButton(auction);
         }
 
-        de.sb.broker.OpenAuctionsController.prototype.putAuction = function(auctionId){
-
+        de.sb.broker.OpenAuctionsController.prototype.putAuction = function(auction){
             var formElement = document.querySelector("section.auction-form");
             var inputs = formElement.querySelectorAll("input");
-            var auction = {};
+
             auction.type = "auction";
-            auction.creationTimestamp = Date.parse(inputs[0].value);
-            auction.closureTimestamp = Date.parse(inputs[1].value);
             auction.title = inputs[2].value;
             auction.unitCount = inputs[3].value;
             auction.askingPrice = Number.parseInt(inputs[4].value) * 100;
             var description = formElement.querySelector("textarea");
             auction.description = description.value;
-            if(auctionId) {
-                auction.identity = auctionId;
+            if(auction) {
+                auction.identity = auction.identity;
             }
             var self = this;
             var resource = "/services/auctions";
@@ -197,19 +192,20 @@ this.de.sb.broker = this.de.sb.broker || {};
 
                 if (request.status === 200) {
                     document.querySelector("main").removeChild(formElement);
+                    self.display();
                 }else{
-                    self.fillAuctionTemplate(auctionId);
+                    self.fillAuctionTemplate(auction);
                 }
                 self.displayStatus(request.status, request.statusText);
 
             })
 		}
 
-    	de.sb.broker.OpenAuctionsController.prototype.addSendButton = function(auctionId) {
+    	de.sb.broker.OpenAuctionsController.prototype.addSendButton = function(auction) {
             var formElement = document.querySelector("section.auction-form");
             var sendBtn = formElement.children[1];
             sendBtn.onclick = (function(){
-            	this.putAuction(auctionId);
+            	this.putAuction(auction);
             }).bind(this);
     	}
 
