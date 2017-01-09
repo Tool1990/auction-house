@@ -47,8 +47,7 @@ this.de.sb.broker = this.de.sb.broker || {};
 		if (!this.sessionContext.user) return;
 		SUPER.prototype.display.call(this);
 
-		// one section for all auctions
-		// template?
+
 		var sectionElement = document.querySelector("#open-auctions-template").content.cloneNode(true).firstElementChild;
 		document.querySelector("main").appendChild(sectionElement);
 
@@ -85,7 +84,7 @@ this.de.sb.broker = this.de.sb.broker || {};
 		de.sb.broker.OpenAuctionsController.prototype.displayAuctions = function (auctions) {
 			var tableBodyElement = document.querySelector("section.open-auctions tbody");
 			var rowTemplate = document.createElement("tr");
-			for (var index = 0; index < 7; ++index) {
+			for (var index = 0; index < 8; ++index) {
 				var cellElement = document.createElement("td");
 				cellElement.appendChild(document.createElement("output"));
 				rowTemplate.appendChild(cellElement);
@@ -99,12 +98,36 @@ this.de.sb.broker = this.de.sb.broker || {};
 				var activeElements = rowElement.querySelectorAll("output");
 				activeElements[0].value = auction.seller == undefined ? self.sessionContext.user.alias : auction.seller.alias;
 				activeElements[0].title = createDisplayTitle(activeElements[0].value);
-				activeElements[1].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-				activeElements[2].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-				activeElements[3].value = auction.title;
-				activeElements[3].title = auction.description;
-				activeElements[4].value = auction.unitCount;
-				activeElements[5].value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);	// min Bid not saved in auctios
+				var image = new Image();
+				if(auction.seller === undefined){
+					if(self.sessionContext.user.avatar){
+						image.src = self.sessionContext.user.avatar;
+					} else{
+						image.src = "http://placehold.it/30x30";
+					}
+
+				}else{
+                    var self2 = self;
+                    var resource = "/services/" + auction.seller.identity + "/avatar";
+                    de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self2.sessionContext, function (request) {
+
+                        if (request.status === 200) {
+                            var image2 = JSON.parse(request.responseText);
+                            activeElements[1].append(image2);
+                        }else{
+                            image.src = "http://placehold.it/30x30";
+                            activeElements[1].append(image);
+						}
+                    });
+
+				}
+                activeElements[1].append(image);
+				activeElements[2].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+				activeElements[3].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+				activeElements[4].value = auction.title;
+				activeElements[5].title = auction.description;
+				activeElements[5].value = auction.unitCount;
+				activeElements[6].value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);	// min Bid not saved in auctios
                 var btn = document.createElement('input');
                 btn.type = "button";
                 btn.className = "btn";
@@ -116,7 +139,7 @@ this.de.sb.broker = this.de.sb.broker || {};
                 number.type = "number";
                 number.value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);
                 var toAppend = activeElements[0].value === self.sessionContext.user.alias ? btn: number;
-				activeElements[6].append(toAppend);
+				activeElements[7].append(toAppend);
 			});
             var newButton = document.querySelector("section.open-auctions button");
             newButton.onclick = (function(){

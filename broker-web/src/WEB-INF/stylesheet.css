@@ -111,6 +111,11 @@ table.auctions td {
 	border-left: 1px solid white;
 }
 
+table.auctions input {
+	margin: auto;
+}
+
+
 
 section.login input {
 	width: 20em;
@@ -155,7 +160,18 @@ section.open-auctions td:nth-of-type(n+5) {
 	text-align: right;
 }
 
-section.open-auctions td:nth-of-type(7) input[type="number"] {
+section.open-auctions td:nth-of-type(2) {
+	width: 5em;
+	text-align: center;
+}
+section.open-auctions td:nth-of-type(8) {
+	text-align: center;
+}
+
+section.open-auctions td:nth-of-type(8) input[type="number"] {
+	width: 5em;
+}
+section.open-auctions td:nth-of-type(8) input[type="button"] {
 	width: 5em;
 }
 
