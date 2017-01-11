@@ -47,6 +47,7 @@ this.de.sb.broker = this.de.sb.broker || {};
 	 */
 	de.sb.broker.PreferencesController.prototype.displayUser = function () {
 		var user = this.sessionContext.user;
+		console.log(user);
 		var activeElements = document.querySelectorAll("section.preferences input");
 		activeElements[0].value = user.group;
 		activeElements[1].value = user.alias;

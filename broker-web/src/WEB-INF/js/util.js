@@ -59,6 +59,15 @@ this.de.sb.util = this.de.sb.util || {};
 		}
 	}
 
+	de.sb.util.createImage = function (byteArray) {
+        var bytes = [];
+        for(var key in byteArray){
+            bytes.push(byteArray[key]);
+        }
+        var base64String = btoa(String.fromCharCode.apply(null, new Uint8Array(bytes)));
+        return "data:image/*;base64," + base64String;
+    }
+
 	
 	/**
 	 * Creates a new request status accumulator. the accumulator stores the

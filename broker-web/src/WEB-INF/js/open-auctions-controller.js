@@ -113,9 +113,8 @@ this.de.sb.broker = this.de.sb.broker || {};
 
                         if (request.status === 200) {
                         	var image2 = new Image();
-                            var byteArray = new Uint8Array(JSON.parse(request.responseText));
-                            console.log(byteArray);
-                            image2.src = "data:image/jpeg;base64," + byteArray;
+
+                            image2.src = de.sb.util.createImage(JSON.parse(request.responseText));
                             console.log(image2.src);
                             activeElements[1].append(image2);
                         }else{
