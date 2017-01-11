@@ -108,11 +108,15 @@ this.de.sb.broker = this.de.sb.broker || {};
 
 				}else{
                     var self2 = self;
-                    var resource = "/services/" + auction.seller.identity + "/avatar";
+                    var resource = "/services/people/" + auction.seller.identity + "/avatar";
                     de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self2.sessionContext, function (request) {
 
                         if (request.status === 200) {
-                            var image2 = JSON.parse(request.responseText);
+                        	var image2 = new Image();
+                            var byteArray = new Uint8Array(JSON.parse(request.responseText));
+                            console.log(byteArray);
+                            image2.src = "data:image/jpeg;base64," + byteArray;
+                            console.log(image2.src);
                             activeElements[1].append(image2);
                         }else{
                             image.src = "http://placehold.it/30x30";
