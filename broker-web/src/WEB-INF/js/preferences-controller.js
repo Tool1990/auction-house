@@ -38,7 +38,19 @@ this.de.sb.broker = this.de.sb.broker || {};
 		sectionElement.addEventListener("drop", this.persistAvatar.bind(this));
 		document.querySelector("main").appendChild(sectionElement);
 
-		this.displayUser();
+		if(!this.sessionContext.user.avatar) {
+            var self = this;
+            var resource = "/services/people/" + self.sessionContext.user.identity + "/avatar";
+            de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self.sessionContext, function (request) {
+                if (request.status === 200) {
+                    self.sessionContext.user.avatar = de.sb.util.createImage(JSON.parse(request.responseText));
+
+                }
+                self.displayUser();
+            });
+        }else{
+			this.displayUser();
+		}
 	}
 
 
