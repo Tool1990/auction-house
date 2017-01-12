@@ -86,21 +86,13 @@ public class AuctionService {
         List<Annotation> filterAnnotations = new ArrayList<>();
 
         if (closed == Boolean.TRUE) {
-            for (Iterator<Auction> iterator = auctions.iterator(); iterator.hasNext(); ) {
-                if (!iterator.next().isClosed()) {
-                    iterator.remove();
-                }
-            }
+            auctions.removeIf(auction -> !auction.isClosed());
 
             filterAnnotations.add(new Auction.XmlBidsAsEntityFilter.Literal());
             filterAnnotations.add(new Bid.XmlBidderAsEntityFilter.Literal());
             filterAnnotations.add(new Bid.XmlAuctionAsReferenceFilter.Literal());
         } else if (closed == Boolean.FALSE) {
-            for (Iterator<Auction> iterator = auctions.iterator(); iterator.hasNext(); ) {
-                if (iterator.next().isClosed()) {
-                    iterator.remove();
-                }
-            }
+            auctions.removeIf(Auction::isClosed);
         }
 
         Collections.sort(auctions, Comparator.comparing(Auction::getClosureTimestamp)
@@ -209,9 +201,10 @@ public class AuctionService {
     public long setBid(
             @HeaderParam("Authorization") String authString,
             @PathParam("identity") long auctionIdentity,
-            @Min(0) long price
+            @QueryParam("price") @Min(0) long price
     ) {
         try {
+            System.out.println(price);
             Person requester = LifeCycleProvider.authenticate(authString);
 
             Auction auction = getEM().find(Auction.class, auctionIdentity);

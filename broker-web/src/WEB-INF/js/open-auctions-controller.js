@@ -62,7 +62,7 @@ this.de.sb.broker = this.de.sb.broker || {};
 		// this time all auctions should be in one section
 		// the only difference is an edit button on the own auctions
 		// other foreign auctions have a bid-field
-		var resource = "/services/auctions";
+		var resource = "/services/auctions/?closed=false";
 		de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, this.sessionContext, function (request) {
 
 			if (request.status === 200) {
@@ -109,7 +109,7 @@ this.de.sb.broker = this.de.sb.broker || {};
                         	var image2 = new Image();
 
                             image2.src = de.sb.util.createImage(JSON.parse(request.responseText));
-                            console.log(image2.src);
+
                             activeElements[1].append(image2);
                         }else{
                             image.src = "http://placehold.it/30x30";
@@ -125,23 +125,32 @@ this.de.sb.broker = this.de.sb.broker || {};
 				activeElements[5].title = auction.description;
 				activeElements[5].value = auction.unitCount;
 				activeElements[6].value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);	// min Bid not saved in auctios
-                var btn = document.createElement('input');
-                btn.type = "button";
-                btn.className = "btn";
-                btn.value = "edit";
-                btn.onclick = (function(){
-                	self.displayAuctionEdit(auction);
-				}).bind(self);
-                var number = document.createElement('input');
-                number.type = "number";
-                number.value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);
-                var toAppend = activeElements[0].value === self.sessionContext.user.alias ? btn: number;
-				activeElements[7].append(toAppend);
+
+                if(activeElements[0].value === self.sessionContext.user.alias){
+                    var btn = document.createElement('input');
+                    btn.type = "button";
+                    btn.className = "btn";
+                    btn.value = "edit";
+                    btn.onclick = (function(){
+                        self.displayAuctionEdit(auction);
+                    }).bind(self);
+                    activeElements[7].append(btn);
+				}else{
+                    var number = document.createElement('input');
+                    number.type = "number";
+                    number.value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);
+                    activeElements[7].append(number);
+                    number.onkeydown = (function() {
+                        self.persistBid(auction, number.value);
+                    });
+
+				}
+
 			});
             var newButton = document.querySelector("section.open-auctions button");
             newButton.onclick = (function(){
                 self.displayAuctionEdit();
-            }).bind(self);
+            });
 		}
 
 		/**
@@ -158,6 +167,27 @@ this.de.sb.broker = this.de.sb.broker || {};
 			this.fillAuctionTemplate(auction);
 
 		}
+
+		de.sb.broker.OpenAuctionsController.prototype.persistBid = function (auction, element) {
+			if(event.keyCode == 13){
+
+				var price = element;
+				if(price !==  0){
+					price = price*100;
+				}
+                console.log(price);
+				var self = this;
+                var resource = "/services/auctions/" + auction.identity + "/bid?price=" + price;
+                de.sb.util.AJAX.invoke(resource, "POST",null, price, this.sessionContext, function (request) {
+                    if (request.status === 200) {
+                        console.log(request.responseText);
+                    }
+
+                    self.displayStatus(request.status, request.statusText);
+                });
+
+			}
+        }
 
     	de.sb.broker.OpenAuctionsController.prototype.fillAuctionTemplate = function(auction) {
             var formElement = document.querySelector("section.auction-form");

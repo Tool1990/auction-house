@@ -57,7 +57,16 @@ this.de.sb.broker = this.de.sb.broker || {};
 			if (request.status === 200) {
 				self.sessionContext.user = JSON.parse(request.responseText);
 				self.sessionContext.userPassword = credentials.userPassword;
-				de.sb.broker.APPLICATION.preferencesController.display();
+				var self2 = self;
+                var resource = "/services/people/" + self.sessionContext.user.identity + "/avatar";
+                de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self2.sessionContext, function (request) {
+                    if (request.status === 200) {
+                        self2.sessionContext.user.avatar = de.sb.util.createImage(JSON.parse(request.responseText));
+
+                    }
+                    de.sb.broker.APPLICATION.preferencesController.display();
+                });
+
 			}
 		});
 	}
