@@ -93,12 +93,12 @@ this.de.sb.broker = this.de.sb.broker || {};
 
 			var self = this;
 			auctions.forEach(function (auction) {
-				console.log(auction);
 				var rowElement = rowTemplate.cloneNode(true);
 				tableBodyElement.appendChild(rowElement);
 				var activeElements = rowElement.querySelectorAll("output");
 				activeElements[0].value = auction.seller.alias;
 				activeElements[0].title = createDisplayTitle(activeElements[0].value);
+                var image = new Image();
 
 
                     var self2 = self;
@@ -106,19 +106,16 @@ this.de.sb.broker = this.de.sb.broker || {};
                     de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self2.sessionContext, function (request) {
 
                         if (request.status === 200) {
-                        	var image2 = new Image();
+                            image.src = de.sb.util.createImage(JSON.parse(request.responseText));
 
-                            image2.src = de.sb.util.createImage(JSON.parse(request.responseText));
-
-                            activeElements[1].append(image2);
                         }else{
                             image.src = "http://placehold.it/30x30";
-                            activeElements[1].append(image);
+
 						}
                     });
 
 
-
+                activeElements[1].append(image);
 				activeElements[2].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
 				activeElements[3].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
 				activeElements[4].value = auction.title;
@@ -182,7 +179,7 @@ this.de.sb.broker = this.de.sb.broker || {};
                     if (request.status === 200) {
                         console.log(request.responseText);
                     }
-
+					console.log(request.status);
                     self.displayStatus(request.status, request.statusText);
                 });
 

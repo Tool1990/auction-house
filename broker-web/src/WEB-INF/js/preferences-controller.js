@@ -38,19 +38,19 @@ this.de.sb.broker = this.de.sb.broker || {};
 		sectionElement.addEventListener("drop", this.persistAvatar.bind(this));
 		document.querySelector("main").appendChild(sectionElement);
 
-		if(!this.sessionContext.user.avatar) {
-            var self = this;
-            var resource = "/services/people/" + self.sessionContext.user.identity + "/avatar";
-            de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self.sessionContext, function (request) {
-                if (request.status === 200) {
-                    self.sessionContext.user.avatar = de.sb.util.createImage(JSON.parse(request.responseText));
-
-                }
-                self.displayUser();
-            });
-        }else{
+        // if(!this.sessionContext.user.avatar) {
+        //     var self = this;
+        //     var resource = "/services/people/" + self.sessionContext.user.identity + "/avatar";
+        //     de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self.sessionContext, function (request) {
+        //         if (request.status === 200) {
+        //             self.sessionContext.user.avatar = de.sb.util.createImage(JSON.parse(request.responseText));
+        //
+        //         }
+        //         self.displayUser();
+        //     });
+        // }else{
 			this.displayUser();
-		}
+		// }
 	}
 
 
@@ -73,11 +73,12 @@ this.de.sb.broker = this.de.sb.broker || {};
 		activeElements[9].value = user.contact.phone;
 
 		var avatar = document.querySelector("section.preferences img");
-		if(this.sessionContext.user.avatar){
-			avatar.src = this.sessionContext.user.avatar;
-		} else{
-			avatar.src = "http://placehold.it/100x100";
-		}
+		// if(this.sessionContext.user.avatar){
+			avatar.src = "/services/people/" + this.sessionContext.user.identity + "/avatar?time=" + new Date().getTime();
+		// 	avatar.src = this.sessionContext.user.avatar;
+		// } else{
+		// 	avatar.src = "http://placehold.it/100x100";
+		// }
 	}
 
 	/**
@@ -86,26 +87,26 @@ this.de.sb.broker = this.de.sb.broker || {};
 	de.sb.broker.PreferencesController.prototype.persistAvatar = function (event) {
 		event.preventDefault();
 		var file = event.dataTransfer.files[0];
-		var fr = new FileReader();
-		fr.onload = function() {
+
 			var self = this;
-			var arrayBuffer = fr.result;
-			var byteArray = new Uint8Array(arrayBuffer);
-			var body = JSON.stringify(byteArray);
-			var header = {"Content-type": "application/json"};
+			var body = file;
+			//text/plain content tpye
+			var header = {"Content-type": "text/plain"};
+			debugger;
 			//var header = {"Content-type": file.type};
 			var url = "/services/people/" + self.sessionContext.user.identity + "/avatar";
 			de.sb.util.AJAX.invoke(url, "PUT", header, body, this.sessionContext, function (request) {
 				self.displayStatus(request.status, request.statusText);
 				if (request.status === 200) {
+					debugger;
 					self.sessionContext.user.version = self.sessionContext.user.version + 1;
+                    document.querySelector("section.preferences img").src = "/services/people/" + self.sessionContext.user.identity + "/avatar?time=" + new Date().getTime();
 				} else if (request.status === 409) {
 					de.sb.broker.APPLICATION.welcomeController.display();
 				} else {
 					self.displayUser();
 				}
 			});
-		}.bind(this);
 		fr.readAsArrayBuffer(file);
 	}
 
