@@ -156,15 +156,23 @@ section.preferences fieldset:nth-of-type(odd) input {
 	width: 24em;
 }
 
-
-section.closed-seller-auctions td:nth-of-type(n+5) {
+section.closed-seller-auctions td:nth-of-type(n+6) {
 	text-align: right;
 }
 
-section.closed-bidder-auctions td:nth-of-type(n+6) {
+section.closed-seller-auctions td:nth-of-type(2) {
+	width: 5em;
+	text-align: center;
+}
+
+section.closed-bidder-auctions td:nth-of-type(n+7) {
 	text-align: right;
 }
 
+section.closed-bidder-auctions td:nth-of-type(2) {
+	width: 5em;
+	text-align: center;
+}
 
 section.open-auctions td:nth-of-type(n+5) {
 	text-align: right;

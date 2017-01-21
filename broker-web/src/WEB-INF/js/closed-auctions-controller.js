@@ -76,7 +76,7 @@ this.de.sb.broker = this.de.sb.broker || {};
 	de.sb.broker.ClosedAuctionsController.prototype.displaySellerAuctions = function (auctions) {
 		var tableBodyElement = document.querySelector("section.closed-seller-auctions tbody");
 		var rowTemplate = document.createElement("tr");
-		for (var index = 0; index < 7; ++index) {
+		for (var index = 0; index < 8; ++index) {
 			var cellElement = document.createElement("td");
 			cellElement.appendChild(document.createElement("output"));
 			rowTemplate.appendChild(cellElement);
@@ -84,22 +84,35 @@ this.de.sb.broker = this.de.sb.broker || {};
 
 		var self = this;
 		auctions.forEach(function (auction) {
+			console.log(auction);
 			var rowElement = rowTemplate.cloneNode(true);
 			tableBodyElement.appendChild(rowElement);
-
-			var maxBid = selectBidByMaximumPrice(auction.bids);
 			var activeElements = rowElement.querySelectorAll("output");
-			if (maxBid) {
-				activeElements[0].value = maxBid.bidder.alias;
-				activeElements[0].title = createDisplayTitle(maxBid.bidder);
-			}
-			activeElements[1].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-			activeElements[2].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-			activeElements[3].title = auction.description;
-			activeElements[3].value = auction.title;
-			activeElements[4].value = auction.unitCount;
-			activeElements[5].value = (auction.askingPrice * 0.01).toFixed(2);
-			if (maxBid) activeElements[6].value = (maxBid.price * 0.01).toFixed(2);
+			var maxBid = selectBidByMaximumPrice(auction.bids);
+			
+			var refPerson = (maxBid !== null) ? maxBid.bidder : self.sessionContext.user;
+			
+			activeElements[0].value = refPerson.alias;
+			activeElements[0].title = createDisplayTitle(refPerson);
+			
+			var resource = "/services/people/" + refPerson.identity + "/avatar";
+            var image = new Image();
+            de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self.sessionContext, function (request) {
+                if (request.status === 200) {
+                    image.src = de.sb.util.createImage(JSON.parse(request.responseText));
+                }else{
+                    image.src = "http://placehold.it/30x30";
+				}
+            });
+            
+            activeElements[1].append(image);
+			activeElements[2].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+			activeElements[3].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+			activeElements[4].title = auction.description;
+			activeElements[4].value = auction.title;
+			activeElements[5].value = auction.unitCount;
+			activeElements[6].value = (auction.askingPrice * 0.01).toFixed(2);
+			activeElements[7].value = (maxBid !== null) ? (maxBid.price * 0.01).toFixed(2) : "No Bids";
 		});
 	}
 
@@ -111,7 +124,7 @@ this.de.sb.broker = this.de.sb.broker || {};
 	de.sb.broker.ClosedAuctionsController.prototype.displayBidderAuctions = function (auctions) {
 		var tableBodyElement = document.querySelector("section.closed-bidder-auctions tbody");
 		var rowTemplate = document.createElement("tr");
-		for (var index = 0; index < 9; ++index) {
+		for (var index = 0; index < 10; ++index) {
 			var cellElement = document.createElement("td");
 			cellElement.appendChild(document.createElement("output"));
 			rowTemplate.appendChild(cellElement);
@@ -125,18 +138,31 @@ this.de.sb.broker = this.de.sb.broker || {};
 			var maxBid = selectBidByMaximumPrice(auction.bids);
 			var userBid = selectBidByBidder(auction.bids, self.sessionContext.user.identity);
 			var activeElements = rowElement.querySelectorAll("output");
-			activeElements[0].value = auction.seller.alias;
-			activeElements[0].title = createDisplayTitle(auction.seller);
-			activeElements[1].value = maxBid.bidder.alias;
-			activeElements[1].title = createDisplayTitle(maxBid.bidder);
-			activeElements[2].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-			activeElements[3].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-			activeElements[4].value = auction.title;
-			activeElements[4].title = auction.description;
-			activeElements[5].value = auction.unitCount;
-			activeElements[6].value = (auction.askingPrice * 0.01).toFixed(2);
-			activeElements[7].value = (userBid.price * 0.01).toFixed(2);
-			activeElements[8].value = (maxBid.price * 0.01).toFixed(2);
+			
+			activeElements[0].value = maxBid.bidder.alias;
+			activeElements[0].title = createDisplayTitle(maxBid.bidder);
+			
+            var resource = "/services/people/" + maxBid.bidder.identity + "/avatar";
+            var image = new Image();
+            de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self.sessionContext, function (request) {
+                if (request.status === 200) {
+                    image.src = de.sb.util.createImage(JSON.parse(request.responseText));
+                }else{
+                    image.src = "http://placehold.it/30x30";
+				}
+            });
+            
+            activeElements[1].append(image);
+			activeElements[2].value = auction.seller.alias;
+			activeElements[2].title = createDisplayTitle(auction.seller);           
+			activeElements[3].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+			activeElements[4].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
+			activeElements[5].value = auction.title;
+			activeElements[5].title = auction.description;
+			activeElements[6].value = auction.unitCount;
+			activeElements[7].value = (auction.askingPrice * 0.01).toFixed(2);
+			activeElements[8].value = (userBid.price * 0.01).toFixed(2);
+			activeElements[9].value = (maxBid.price * 0.01).toFixed(2);
 		});
 	}
 

@@ -1,18 +1,3 @@
-/**
- * Allgemeine Anmerkungen:
- *
- * namespace / dateipfad scheint laut aufgabe noch nciht richtig zu sein
- * - statt: src.Web-INF.js
- * - soll sein: de.sb.broker (in unserer struktur ist auch noch ein .rest nach broker)
- *
- * TODO:
- * - display of min Bid
- * - display of edit button / bid field
- * 		- callback methods of the edit button
- * 			- auction editor logic (template is already there)
- */
-
-
 
 "use strict";
 
@@ -51,17 +36,10 @@ this.de.sb.broker = this.de.sb.broker || {};
 		var sectionElement = document.querySelector("#open-auctions-template").content.cloneNode(true).firstElementChild;
 		document.querySelector("main").appendChild(sectionElement);
 
-		// asynchron thread handling (?)
 		var indebtedSemaphore = new de.sb.util.Semaphore(1 - 2);
 		var statusAccumulator = new de.sb.util.StatusAccumulator();
 		var self = this;
 
-
-		// filling
-		// not sure if one function is enough (probably not...)
-		// this time all auctions should be in one section
-		// the only difference is an edit button on the own auctions
-		// other foreign auctions have a bid-field
 		var resource = "/services/auctions/?closed=false";
 		de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, this.sessionContext, function (request) {
 
@@ -100,20 +78,14 @@ this.de.sb.broker = this.de.sb.broker || {};
 				activeElements[0].title = createDisplayTitle(activeElements[0].value);
                 var image = new Image();
 
-
-                    var self2 = self;
-                    var resource = "/services/people/" + auction.seller.identity + "/avatar";
-                    de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self2.sessionContext, function (request) {
-
-                        if (request.status === 200) {
-                            image.src = de.sb.util.createImage(JSON.parse(request.responseText));
-
-                        }else{
-                            image.src = "http://placehold.it/30x30";
-
-						}
-                    });
-
+                var resource = "/services/people/" + auction.seller.identity + "/avatar";
+                de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self.sessionContext, function (request) {
+                    if (request.status === 200) {
+                        image.src = de.sb.util.createImage(JSON.parse(request.responseText));
+                    }else{
+                        image.src = "http://placehold.it/30x30";
+					}
+                });
 
                 activeElements[1].append(image);
 				activeElements[2].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
@@ -140,9 +112,7 @@ this.de.sb.broker = this.de.sb.broker || {};
                     number.onkeydown = (function() {
                         self.persistBid(auction, number.value);
                     });
-
 				}
-
 			});
             var newButton = document.querySelector("section.open-auctions button");
             newButton.onclick = (function(){
@@ -199,8 +169,6 @@ this.de.sb.broker = this.de.sb.broker || {};
 				inputs[3].value = auction.unitCount;
 				inputs[4].value = (parseInt(auction.askingPrice) * 0.01).toFixed(2);
 
-
-
             }else{
                 inputs[0].value = new Date(Date.now()).toLocaleString(TIMESTAMP_OPTIONS);
 				var endDate = new Date(Date.now());
@@ -255,37 +223,6 @@ this.de.sb.broker = this.de.sb.broker || {};
             	this.putAuction(auction);
             }).bind(this);
     	}
-
-
-		/**
-		 * Displays the given auctions that feature the requester as bidder.
-		 * @param auctions {Array} the bidder auctions
-		 */
-		// de.sb.broker.OpenAuctionsController.prototype.displayBidderAuctions = function (auctions) {
-		// 	var tableBodyElement = document.querySelector("section.open-auctions tbody");
-		// 	var rowTemplate = document.createElement("tr");
-		// 	for (var index = 0; index < 8; ++index) {
-		// 		var cellElement = document.createElement("td");
-		// 		cellElement.appendChild(document.createElement("output"));
-		// 		rowTemplate.appendChild(cellElement);
-		// 	}
-        //
-		// 	var self = this;
-		// 	auctions.forEach(function (auction) {
-		// 		var rowElement = rowTemplate.cloneNode(true);
-		// 		tableBodyElement.appendChild(rowElement);
-		// 		var activeElements = rowElement.querySelectorAll("output");
-		// 		activeElements[0].value = auction.seller.alias;
-		// 		activeElements[0].title = createDisplayTitle(auction.seller);
-		// 		activeElements[1].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-		// 		activeElements[2].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
-		// 		activeElements[3].value = auction.title;
-		// 		activeElements[3].title = auction.description;
-		// 		activeElements[4].value = auction.unitCount;
-		// 		//activeElements[5].value = (auction.minPrice * 0.01).toFixed(2);	// min Bid not saved in auctios
-		// 		//activeElements[6].value = ; // bid field
-		// 	});
-		// }
 
 
 		/**
