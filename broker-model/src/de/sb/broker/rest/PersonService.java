@@ -2,6 +2,7 @@ package de.sb.broker.rest;
 
 import de.sb.broker.model.*;
 
+import javax.imageio.ImageIO;
 import javax.persistence.Cache;
 import javax.persistence.EntityManager;
 import javax.persistence.RollbackException;
@@ -16,8 +17,15 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.util.*;
+import java.util.List;
 
 @Path("people")
 public class PersonService {
@@ -273,7 +281,12 @@ public class PersonService {
     @GET
     @Produces({MediaType.WILDCARD})
     @Path("{identity}/avatar")
-    public Response getAvatar(@PathParam("identity") long personIdentity, @HeaderParam("Authorization") String authString) {
+    public Response getAvatar(
+            @PathParam("identity") long personIdentity,
+            @HeaderParam("Authorization") String authString,
+            @QueryParam("width") @Min(0) Integer width,
+            @QueryParam("height") @Min(0) Integer height
+            ) {
         LifeCycleProvider.authenticate(authString);
         Person person = getEM().find(Person.class, personIdentity);
 
@@ -286,8 +299,33 @@ public class PersonService {
         if (avatar == null) {
             return Response.noContent().build();
         }
+        byte[] avatarAsByteArray = avatar.getContent();
 
-        return Response.ok(avatar.getContent(), avatar.getType()).build();
+        if ((width != null) || (height != null)) {
+            int imageWidth, imageHeight;
+            try {
+                InputStream in = new ByteArrayInputStream(avatar.getContent());
+                BufferedImage originalImage = ImageIO.read(in);
+                int type = originalImage.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : originalImage.getType();
+
+                imageHeight = height != null ? height : originalImage.getHeight();
+                imageWidth = width != null ? width : originalImage.getWidth();
+
+                BufferedImage resizedImage = new BufferedImage(imageWidth, imageHeight, type);
+                Graphics2D g = resizedImage.createGraphics();
+                g.drawImage(originalImage, 0, 0, imageWidth, imageHeight, null);
+                g.dispose();
+
+                String imageType = avatar.getType().substring(avatar.getType().lastIndexOf("/") + 1);
+                ByteArrayOutputStream baos=new ByteArrayOutputStream();
+                ImageIO.write(resizedImage, imageType, baos);
+                avatarAsByteArray = baos.toByteArray();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return Response.ok(avatarAsByteArray, avatar.getType()).build();
     }
 
     @PUT
