@@ -115,13 +115,6 @@ table.auctions input {
 	margin: auto;
 }
 
-table.auctions td img {
-	width: 30px;
-	height: 30px;
-}
-
-
-
 section.login input {
 	width: 20em;
 }

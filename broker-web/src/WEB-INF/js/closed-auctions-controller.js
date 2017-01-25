@@ -94,17 +94,11 @@ this.de.sb.broker = this.de.sb.broker || {};
 			
 			activeElements[0].value = refPerson.alias;
 			activeElements[0].title = createDisplayTitle(refPerson);
-			
-			var resource = "/services/people/" + refPerson.identity + "/avatar";
+
             var image = new Image();
-            de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self.sessionContext, function (request) {
-                if (request.status === 200) {
-                    image.src = de.sb.util.createImage(JSON.parse(request.responseText));
-                }else{
-                    image.src = "http://placehold.it/30x30";
-				}
-            });
-            
+            image.src = "/services/people/" + refPerson.identity + "/avatar?width=30&height=30";
+            image.title = refPerson.contact.email;
+
             activeElements[1].append(image);
 			activeElements[2].value = new Date(auction.creationTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
 			activeElements[3].value = new Date(auction.closureTimestamp).toLocaleString(TIMESTAMP_OPTIONS);
@@ -138,19 +132,13 @@ this.de.sb.broker = this.de.sb.broker || {};
 			var maxBid = selectBidByMaximumPrice(auction.bids);
 			var userBid = selectBidByBidder(auction.bids, self.sessionContext.user.identity);
 			var activeElements = rowElement.querySelectorAll("output");
-			
+
 			activeElements[0].value = maxBid.bidder.alias;
 			activeElements[0].title = createDisplayTitle(maxBid.bidder);
-			
-            var resource = "/services/people/" + maxBid.bidder.identity + "/avatar";
+
             var image = new Image();
-            de.sb.util.AJAX.invoke(resource, "GET", {"Accept": "application/json"}, null, self.sessionContext, function (request) {
-                if (request.status === 200) {
-                    image.src = de.sb.util.createImage(JSON.parse(request.responseText));
-                }else{
-                    image.src = "http://placehold.it/30x30";
-				}
-            });
+            image.src = "/services/people/" + maxBid.bidder.identity + "/avatar?width=30&height=30";
+            image.title = maxBid.bidder.contact.email;
             
             activeElements[1].append(image);
 			activeElements[2].value = auction.seller.alias;
