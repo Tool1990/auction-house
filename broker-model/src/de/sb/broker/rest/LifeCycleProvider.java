@@ -163,8 +163,9 @@ public class LifeCycleProvider implements ContainerRequestFilter, ContainerRespo
 		final Response response = exception instanceof WebApplicationException
 				? ((WebApplicationException) exception).getResponse()
 				: Response.status(INTERNAL_SERVER_ERROR).build();
-
-		Logger.getGlobal().log(logLevel(response.getStatusInfo()), exception.getMessage(), exception);
+		if(response.getStatus() != 401){
+			Logger.getGlobal().log(logLevel(response.getStatusInfo()), exception.getMessage(), exception);
+		}
 		return response;
 	}
 

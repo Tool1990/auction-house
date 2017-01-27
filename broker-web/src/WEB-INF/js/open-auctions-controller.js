@@ -75,7 +75,7 @@ this.de.sb.broker = this.de.sb.broker || {};
 				tableBodyElement.appendChild(rowElement);
 				var activeElements = rowElement.querySelectorAll("output");
 				activeElements[0].value = auction.seller.alias;
-				activeElements[0].title = createDisplayTitle(activeElements[0].value);
+				activeElements[0].title = createDisplayTitle(auction.seller);
                 var image = new Image();
                 image.src = "/services/people/" + auction.seller.identity + "/avatar?width=30&height=30"
             	image.title = auction.seller.contact.email;
@@ -131,7 +131,7 @@ this.de.sb.broker = this.de.sb.broker || {};
 		de.sb.broker.OpenAuctionsController.prototype.persistBid = function (auction, element) {
 			if(event.keyCode == 13){
 
-				var price = element;
+				var price = Math.round(Number.parseFloat(element));
 				if(price !==  0){
 					price = price*100;
 				}
@@ -187,7 +187,8 @@ this.de.sb.broker = this.de.sb.broker || {};
             auction.type = "auction";
             auction.title = inputs[2].value;
             auction.unitCount = inputs[3].value;
-            auction.askingPrice = Number.parseInt(inputs[4].value) * 100;
+            //Todo number
+            auction.askingPrice = Math.round(Number.parseFloat(inputs[4].value) * 100);
             var description = formElement.querySelector("textarea");
             auction.description = description.value;
             if(auction) {
