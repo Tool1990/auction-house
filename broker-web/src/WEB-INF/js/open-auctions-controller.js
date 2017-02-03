@@ -131,10 +131,7 @@ this.de.sb.broker = this.de.sb.broker || {};
 		de.sb.broker.OpenAuctionsController.prototype.persistBid = function (auction, element) {
 			if(event.keyCode == 13){
 
-				var price = Math.round(Number.parseFloat(element));
-				if(price !==  0){
-					price = price*100;
-				}
+				var price = Math.round(Number.parseFloat(element) * 100);
                 console.log(price);
 				var self = this;
                 var resource = "/services/auctions/" + auction.identity + "/bid?price=" + price;
@@ -187,7 +184,6 @@ this.de.sb.broker = this.de.sb.broker || {};
             auction.type = "auction";
             auction.title = inputs[2].value;
             auction.unitCount = inputs[3].value;
-            //Todo number
             auction.askingPrice = Math.round(Number.parseFloat(inputs[4].value) * 100);
             var description = formElement.querySelector("textarea");
             auction.description = description.value;

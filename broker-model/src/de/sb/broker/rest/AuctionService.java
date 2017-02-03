@@ -217,9 +217,11 @@ public class AuctionService {
 
             Bid bid = auction.getBid(requester);
             if (bid == null) { //create new bid
-                bid = new Bid(auction, requester);
-                bid.setPrice(price);
-                getEM().persist(bid);
+                if (price > 0) {
+                    bid = new Bid(auction, requester);
+                    bid.setPrice(price);
+                    getEM().persist(bid);
+                }
             } else if (price == 0) { //remove requesters bid
                 getEM().remove(bid);
             } else { //update requesters bid
